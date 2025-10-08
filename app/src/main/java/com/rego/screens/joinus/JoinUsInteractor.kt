@@ -19,7 +19,7 @@ class JoinUsInteractor(
         try {
             emit(DataState.Loading(progressBarState = ProgressBarState.Loading))
 
-            val response = api.getInsuranceCompanies(page, limit)
+            val response = api.getInsuranceCompanies()
 
             if (response.status == true && response.data != null) {
                 emit(DataState.Data(data = response.data))
