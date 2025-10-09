@@ -11,4 +11,6 @@ data class HomeViewState(
     val summaryCards: List<Triple<String, Int, Int>>? = null,
     val ongoingOrdersAll: List<OrderData>? = null,
     val quickFilters: List<String>? = null,
+    val userName: String? = null,
+    val userInitial: String = "U"
 ) : ViewState

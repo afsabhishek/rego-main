@@ -17,10 +17,11 @@ object NetworkConfig {
 
 object ApiRoutes {
     const val AUTH_LOGIN = "/auth/login"
-    const val AUTH_VERIFY_OTP = "/auth/verify-otp"
+    const val AUTH_VERIFY_OTP = "/auth/verify-login-otp"
     const val AUTH_RESEND_OTP = "/auth/resend-otp"
     const val INSURANCE_COMPANIES = "/insurance-companies"
     const val JOIN_US_REGISTER = "/auth/signup"
+    const val USER_PROFILE = "/user/profile"
 }
 
 class KtorClient {

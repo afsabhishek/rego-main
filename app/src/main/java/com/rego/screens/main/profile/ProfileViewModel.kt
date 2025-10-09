@@ -2,49 +2,56 @@ package com.rego.screens.main.profile
 
 import androidx.lifecycle.viewModelScope
 import com.rego.screens.base.BaseViewModel
+import com.rego.screens.base.DataState
 import com.rego.screens.base.ProgressBarState
 import com.rego.screens.base.UIComponent
 import kotlinx.coroutines.launch
 
-class ProfileViewModel(private val api: ProfileApi) :
-    BaseViewModel<ProfileEvent, ProfileViewState, ProfileAction>() {
+class ProfileViewModel(
+    private val interactor: ProfileInteractor
+) : BaseViewModel<ProfileEvent, ProfileViewState, ProfileAction>() {
 
     override fun setInitialState() = ProfileViewState()
 
     override fun onTriggerEvent(event: ProfileEvent) {
         when (event) {
-            is ProfileEvent.Init -> init()
+            is ProfileEvent.Init -> loadUserProfile()
         }
     }
 
-    private fun init() {
+    fun loadUserProfile() {
         viewModelScope.launch {
-            setState { copy(progressBarState = ProgressBarState.Loading) }
-            try {
-                val response = api.getProfile()
-                if (response.status == true && response.data != null) {
-                    val profile = response.data!!
-                    setState {
-                        copy(
-                            name = profile.name,
-                            phone = profile.phone,
-                            email = profile.email,
-                            customerId = profile.customerId
-                        )
+            interactor.getUserProfile().collect { dataState ->
+                when (dataState) {
+                    is DataState.Loading -> {
+                        setState { copy(progressBarState = dataState.progressBarState) }
                     }
-                } else {
-                    throw Exception(response.message ?: "Unknown Error")
+
+                    is DataState.Data -> {
+                        dataState.data?.let { profile ->
+                            setState {
+                                copy(
+                                    name = profile.name,
+                                    phone = profile.phoneNumber,
+                                    email = profile.email,
+                                    customerId = profile.id,
+                                    city = profile.city,
+                                    state = profile.state,
+                                    insuranceCompany = profile.insuranceCompany,
+                                    role = profile.role,
+                                    progressBarState = ProgressBarState.Idle
+                                )
+                            }
+                        }
+                    }
+
+                    is DataState.Error -> {
+                        setState { copy(progressBarState = ProgressBarState.Idle) }
+                        setError { dataState.uiComponent }
+                    }
+
+                    else -> {}
                 }
-            } catch (e: Exception) {
-                setError {
-                    UIComponent.ErrorData(
-                        title = "OOPS!",
-                        message = e.message ?: "Unknown Error",
-                        buttonText = "Retry"
-                    )
-                }
-            } finally {
-                setState { copy(progressBarState = ProgressBarState.Idle) }
             }
         }
     }

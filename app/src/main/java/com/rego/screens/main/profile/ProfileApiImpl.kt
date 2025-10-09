@@ -1,18 +1,34 @@
 package com.rego.screens.main.profile
 
 import com.rego.CommonResponse
+import com.rego.network.ApiRoutes
+import com.rego.network.KtorClient
+import com.rego.network.NetworkConfig
+import com.rego.screens.main.profile.data.ProfileResponse
+import io.ktor.client.call.body
+import io.ktor.client.request.get
+import io.ktor.client.request.header
+import io.ktor.client.request.url
+import io.ktor.http.HttpHeaders
 
-class ProfileApiImpl : ProfileApi {
-    override fun getProfile(): CommonResponse<ProfileData> {
-        return CommonResponse(
-            data = ProfileData(
-                name = "Ayush Singh",
-                phone = "+91 701018897",
-                email = "ayush12@icici.com",
-                customerId = "ICI01"
-            ),
-            status = true,
-            message = "success"
-        )
+class ProfileApiImpl(
+    private val ktorClient: KtorClient
+) : ProfileApi {
+
+    override suspend fun getUserProfile(authToken: String): ProfileResponse {
+        return try {
+            val response = ktorClient.client.get {
+                url("${NetworkConfig.BASE_URL}${ApiRoutes.USER_PROFILE}")
+                header(HttpHeaders.Authorization, "Bearer $authToken")
+            }
+            response.body<ProfileResponse>()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            ProfileResponse(
+                success = false,
+                data = null,
+                message = "Failed to fetch profile: ${e.localizedMessage}"
+            )
+        }
     }
 }

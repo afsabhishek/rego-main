@@ -7,9 +7,11 @@ import com.rego.screens.base.BaseViewModel
 import com.rego.screens.base.DataState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import com.rego.util.UserPreferences
 
 class MobileVerificationViewModel(
-    private val interactor: MobileVerificationInteractor
+    private val interactor: MobileVerificationInteractor,
+    private val userPreferences: UserPreferences
 ) : BaseViewModel<MobileVerificationEvent, MobileVerificationViewState, MobileVerificationAction>() {
 
     override fun setInitialState() = MobileVerificationViewState()
@@ -37,7 +39,7 @@ class MobileVerificationViewModel(
                 setState {
                     copy(
                         otp = event.value,
-                        errorMessage = null // Clear error on OTP change
+                        errorMessage = null
                     )
                 }
             }
@@ -71,7 +73,6 @@ class MobileVerificationViewModel(
                                 }
                                 startResendTimer()
 
-                                // Show success message from backend
                                 setError {
                                     UIComponent.Snackbar(
                                         message = otpData.message,
@@ -83,17 +84,11 @@ class MobileVerificationViewModel(
                     }
 
                     is DataState.Error -> {
-                        // Backend error message will be shown by DefaultScreenUI
                         setError { dataState.uiComponent }
                     }
 
                     is DataState.NetworkStatus -> {
                         // Handle network status if needed
-                    }
-
-                    is DataState.Error -> {
-                        // Backend error message will be shown by DefaultScreenUI
-                        setError { dataState.uiComponent }
                     }
                 }
             }
@@ -113,6 +108,16 @@ class MobileVerificationViewModel(
 
                     is DataState.Data -> {
                         dataState.data?.let { verifyData ->
+                            // Save auth token and user info to preferences
+                            userPreferences.saveAuthToken(verifyData.authentication.authToken)
+                            verifyData.authentication.refreshToken?.let {
+                                userPreferences.saveRefreshToken(it)
+                            }
+                            userPreferences.saveUserInfo(
+                                userId = verifyData.user.id,
+                                userName = verifyData.user.name
+                            )
+
                             setState {
                                 copy(
                                     isOtpVerified = true,
@@ -137,7 +142,6 @@ class MobileVerificationViewModel(
                     }
 
                     is DataState.Error -> {
-                        // Backend error message will be shown
                         setError { dataState.uiComponent }
                     }
 
@@ -151,7 +155,7 @@ class MobileVerificationViewModel(
 
     private fun resendOtp() {
         viewModelScope.launch {
-            setState { copy(otp = "") } // Clear previous OTP
+            setState { copy(otp = "") }
 
             interactor.resendOtp(state.value.mobileNumber).collect { dataState ->
                 when (dataState) {
@@ -174,7 +178,6 @@ class MobileVerificationViewModel(
                     }
 
                     is DataState.Error -> {
-                        // Backend error message will be shown
                         setError { dataState.uiComponent }
                     }
 

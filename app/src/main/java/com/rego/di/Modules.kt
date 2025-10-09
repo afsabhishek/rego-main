@@ -9,6 +9,10 @@ import com.rego.screens.joinus.JoinUsApi
 import com.rego.screens.joinus.JoinUsApiImpl
 import com.rego.screens.joinus.JoinUsInteractor
 import com.rego.screens.joinus.JoinUsViewModel
+import com.rego.screens.main.profile.ProfileApi
+import com.rego.screens.main.profile.ProfileApiImpl
+import com.rego.screens.main.profile.ProfileInteractor
+import com.rego.screens.main.profile.ProfileViewModel
 import com.rego.screens.mobileverification.MobileVerificationApi
 import com.rego.screens.mobileverification.MobileVerificationApiImpl
 import com.rego.screens.mobileverification.MobileVerificationInteractor
@@ -29,15 +33,41 @@ import com.rego.screens.setpassword.SetPasswordApi
 import com.rego.screens.setpassword.SetPasswordApiImpl
 import com.rego.screens.setpassword.SetPasswordInteractor
 import com.rego.screens.setpassword.SetPasswordViewModel
+import com.rego.util.UserPreferences
+import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
 val appModule = module {
+    // User Preferences
+    single { UserPreferences(androidContext()) }
+
     viewModel { LoginOptionViewModel() }
 
     factory<HomeApi> { HomeApiImpl() }
     factory { HomeInteractor(get()) }
-    viewModel { HomeViewModel(get()) }
+    viewModel {
+        HomeViewModel(
+            homeInteractor = get(),
+            profileInteractor = get(),
+            userPreferences = get()
+        )
+    }
+
+    // Profile - Updated with real API
+    factory<ProfileApi> {
+        ProfileApiImpl(
+            ktorClient = get()
+        )
+    }
+    factory {
+        ProfileInteractor(
+            api = get(),
+            userPreferences = get()
+        )
+    }
+    viewModel { ProfileViewModel(get()) }
+
 
     // Notifications
     factory<NotificationApi> { NotificationApiImpl() }
@@ -75,7 +105,8 @@ val appModule = module {
     // 3. ViewModel (Presentation Layer)
     viewModel {
         MobileVerificationViewModel(
-            interactor = get() // Injects MobileVerificationInteractor
+            interactor = get(),
+            userPreferences = get()
         )
     }
 

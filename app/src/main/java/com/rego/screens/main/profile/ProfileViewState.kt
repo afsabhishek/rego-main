@@ -11,4 +11,9 @@ data class ProfileViewState(
     val phone: String? = null,
     val email: String? = null,
     val customerId: String? = null,
+    val city: String? = null,
+    val state: String? = null,
+    val insuranceCompany: String? = null,
+    val role: String? = null,
+    val error: String? = null
 ) : ViewState

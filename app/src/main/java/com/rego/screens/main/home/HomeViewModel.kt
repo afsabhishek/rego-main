@@ -6,11 +6,16 @@ import com.rego.screens.base.BaseViewModel
 import com.rego.screens.base.DataState
 import com.rego.screens.base.ProgressBarState
 import com.rego.screens.components.OrderData
+import com.rego.screens.main.profile.ProfileInteractor
+import com.rego.util.UserPreferences
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-class HomeViewModel(private val homeInteractor: HomeInteractor) :
-    BaseViewModel<HomeEvent, HomeViewState, HomeAction>() {
+class HomeViewModel(
+    private val homeInteractor: HomeInteractor,
+    private val profileInteractor: ProfileInteractor,
+    private val userPreferences: UserPreferences
+) : BaseViewModel<HomeEvent, HomeViewState, HomeAction>() {
 
     override fun setInitialState() = HomeViewState()
 
@@ -25,10 +30,13 @@ class HomeViewModel(private val homeInteractor: HomeInteractor) :
     private fun init() {
         viewModelScope.launch {
             setState {
-                copy(
-                    progressBarState = ProgressBarState.Loading
-                )
+                copy(progressBarState = ProgressBarState.Loading)
             }
+
+            // Load user profile
+            loadUserProfile()
+
+            // Load home data
             delay(500)
             setState {
                 copy(
@@ -38,37 +46,36 @@ class HomeViewModel(private val homeInteractor: HomeInteractor) :
                 )
             }
             setState {
-                copy(
-                    progressBarState = ProgressBarState.Idle
-                )
+                copy(progressBarState = ProgressBarState.Idle)
             }
-            return@launch
-            /**
-             * future approach
-             */
-            homeInteractor.getData().collect { dataState ->
+        }
+    }
+
+    private fun loadUserProfile() {
+        viewModelScope.launch {
+            profileInteractor.getUserProfile().collect { dataState ->
                 when (dataState) {
-                    is DataState.Loading -> {
-
-                    }
-
                     is DataState.Data -> {
-
+                        dataState.data?.let { profile ->
+                            setState {
+                                copy(
+                                    userName = profile.name,
+                                    userInitial = profile.name.firstOrNull()?.toString() ?: "U"
+                                )
+                            }
+                        }
                     }
-
                     is DataState.Error -> {
-
+                        // Handle error if needed, but don't block home screen
+                        setError { dataState.uiComponent }
                     }
-
-                    is DataState.NetworkStatus -> {
-
-                    }
+                    else -> {}
                 }
             }
         }
     }
 
-    // --- Sample data ---
+    // --- Sample data methods remain the same ---
     fun getQuickFilters() = listOf(
         "Work In Progress",
         "Pickup Aligned",
@@ -87,7 +94,6 @@ class HomeViewModel(private val homeInteractor: HomeInteractor) :
         Triple("Pending", R.drawable.pending, 0)
     )
 
-    // Extended sample for ALL statuses
     fun getOngoingOrdersAll() = listOf(
         OrderData(
             orderId = "12042501",
@@ -132,5 +138,4 @@ class HomeViewModel(private val homeInteractor: HomeInteractor) :
             deliveryDate = "10/10/24"
         )
     )
-
 }
