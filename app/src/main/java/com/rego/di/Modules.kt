@@ -1,18 +1,17 @@
 package com.rego.di
-
 import com.rego.screens.loginoption.LoginOptionViewModel
 import com.rego.screens.main.home.HomeApi
 import com.rego.screens.main.home.HomeApiImpl
 import com.rego.screens.main.home.HomeInteractor
 import com.rego.screens.main.home.HomeViewModel
-import com.rego.screens.joinus.JoinUsApi
-import com.rego.screens.joinus.JoinUsApiImpl
-import com.rego.screens.joinus.JoinUsInteractor
-import com.rego.screens.joinus.JoinUsViewModel
 import com.rego.screens.main.profile.ProfileApi
 import com.rego.screens.main.profile.ProfileApiImpl
 import com.rego.screens.main.profile.ProfileInteractor
 import com.rego.screens.main.profile.ProfileViewModel
+import com.rego.screens.joinus.JoinUsApi
+import com.rego.screens.joinus.JoinUsApiImpl
+import com.rego.screens.joinus.JoinUsInteractor
+import com.rego.screens.joinus.JoinUsViewModel
 import com.rego.screens.mobileverification.MobileVerificationApi
 import com.rego.screens.mobileverification.MobileVerificationApiImpl
 import com.rego.screens.mobileverification.MobileVerificationInteractor
@@ -42,6 +41,24 @@ val appModule = module {
     // User Preferences
     single { UserPreferences(androidContext()) }
 
+    // Auth
+    factory<com.rego.screens.auth.AuthApi> {
+        com.rego.screens.auth.AuthApiImpl(
+            ktorClient = get()
+        )
+    }
+    factory {
+        com.rego.screens.auth.AuthInteractor(
+            authApi = get(),
+            userPreferences = get()
+        )
+    }
+    viewModel {
+        com.rego.screens.splash.SplashViewModel(
+            authInteractor = get()
+        )
+    }
+
     viewModel { LoginOptionViewModel() }
 
     factory<HomeApi> { HomeApiImpl() }
@@ -68,7 +85,6 @@ val appModule = module {
     }
     viewModel { ProfileViewModel(get()) }
 
-
     // Notifications
     factory<NotificationApi> { NotificationApiImpl() }
     factory { NotificationInteractor(get()) }
@@ -91,18 +107,16 @@ val appModule = module {
 
     factory<MobileVerificationApi> {
         MobileVerificationApiImpl(
-            ktorClient = get() // Injects KtorClient from networkModule
+            ktorClient = get()
         )
     }
 
-    // 2. Interactor (Business Logic Layer)
     factory {
         MobileVerificationInteractor(
-            api = get() // Injects MobileVerificationApi (which is MobileVerificationApiImpl)
+            api = get()
         )
     }
 
-    // 3. ViewModel (Presentation Layer)
     viewModel {
         MobileVerificationViewModel(
             interactor = get(),
@@ -111,10 +125,9 @@ val appModule = module {
     }
 
     // Join Us
-
     factory<JoinUsApi> {
         JoinUsApiImpl(
-            ktorClient = get() // Injects KtorClient from networkModule
+            ktorClient = get()
         )
     }
 

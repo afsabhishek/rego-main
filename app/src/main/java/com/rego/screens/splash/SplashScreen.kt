@@ -10,9 +10,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -26,14 +29,39 @@ import com.rego.ui.theme.Color00954D
 import com.rego.ui.theme.ColorFFFFFF
 import com.rego.ui.theme.ColorFFFFFF_28
 import com.rego.ui.theme.fontBoldMontserrat
-import kotlinx.coroutines.delay
+import org.koin.androidx.compose.koinViewModel
 
 @Composable
-fun SplashScreen(gotoLoginOptionScreen: () -> Unit) {
+fun SplashScreen(
+    gotoLoginOptionScreen: () -> Unit,
+    gotoHomeScreen: () -> Unit
+) {
+    val viewModel: SplashViewModel = koinViewModel()
+    val navigationEvent by viewModel.navigationEvent.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+
+    // Check session when screen loads
     LaunchedEffect(Unit) {
-        delay(2000)
-        gotoLoginOptionScreen()
+        viewModel.checkSession()
     }
+
+    // Handle navigation events
+    LaunchedEffect(navigationEvent) {
+        when (navigationEvent) {
+            is SplashNavigationEvent.NavigateToHome -> {
+                gotoHomeScreen()
+                viewModel.clearNavigationEvent()
+            }
+            is SplashNavigationEvent.NavigateToLogin -> {
+                gotoLoginOptionScreen()
+                viewModel.clearNavigationEvent()
+            }
+            null -> {
+                // No navigation event yet
+            }
+        }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -63,6 +91,15 @@ fun SplashScreen(gotoLoginOptionScreen: () -> Unit) {
                 text = "INSURER APP",
                 style = fontBoldMontserrat().copy(color = Color.White, letterSpacing = 4.sp)
             )
+
+            // Show loading indicator while checking session
+            if (isLoading) {
+                Spacer(modifier = Modifier.height(40.dp))
+                CircularProgressIndicator(
+                    color = Color.White,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
         }
     }
 }

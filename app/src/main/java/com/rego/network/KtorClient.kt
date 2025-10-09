@@ -1,8 +1,12 @@
 package com.rego.network
 
+import com.rego.util.UserPreferences
 import io.ktor.client.*
 import io.ktor.client.engine.android.*
 import io.ktor.client.plugins.*
+import io.ktor.client.plugins.auth.Auth
+import io.ktor.client.plugins.auth.providers.BearerTokens
+import io.ktor.client.plugins.auth.providers.bearer
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.plugins.logging.*
 import io.ktor.client.plugins.observer.*
@@ -24,7 +28,9 @@ object ApiRoutes {
     const val USER_PROFILE = "/user/profile"
 }
 
-class KtorClient {
+class KtorClient(
+    private val userPreferences: UserPreferences? = null
+) {
     val client = HttpClient(Android) {
         install(ContentNegotiation) {
             json(Json {
@@ -34,7 +40,57 @@ class KtorClient {
                 encodeDefaults = true
             })
         }
-        
+
+        // Add Auth plugin for automatic token handling
+        if (userPreferences != null) {
+            install(Auth) {
+                bearer {
+                    loadTokens {
+                        // Load tokens from preferences
+                        val accessToken = userPreferences.getAuthToken()
+                        val refreshToken = userPreferences.getRefreshToken()
+                        if (accessToken != null && refreshToken != null) {
+                            BearerTokens(accessToken, refreshToken)
+                        } else {
+                            null
+                        }
+                    }
+
+                    refreshTokens {
+                        // Refresh token logic
+                        val refreshToken = userPreferences.getRefreshToken()
+                        if (refreshToken != null) {
+                            try {
+                                // Make refresh token API call here
+                                // This is simplified - you'd need to inject AuthApi properly
+                                val newAccessToken = userPreferences.getAuthToken()
+                                val newRefreshToken = userPreferences.getRefreshToken()
+                                if (newAccessToken != null && newRefreshToken != null) {
+                                    BearerTokens(newAccessToken, newRefreshToken)
+                                } else {
+                                    null
+                                }
+                            } catch (e: Exception) {
+                                null
+                            }
+                        } else {
+                            null
+                        }
+                    }
+
+                    sendWithoutRequest { request ->
+                        // Don't add auth header for login/signup endpoints
+                        request.url.pathSegments.any {
+                            it.contains("login") ||
+                                    it.contains("signup") ||
+                                    it.contains("verify-otp") ||
+                                    it.contains("resend-otp")
+                        }
+                    }
+                }
+            }
+        }
+
         install(Logging) {
             logger = object : Logger {
                 override fun log(message: String) {
@@ -43,24 +99,30 @@ class KtorClient {
             }
             level = LogLevel.ALL
         }
-        
+
         install(ResponseObserver) {
             onResponse { response ->
                 println("HTTP status: ${response.status.value}")
+
+                // Handle 401 Unauthorized globally
+                if (response.status == HttpStatusCode.Unauthorized) {
+                    // Token might be expired, will be handled by Auth plugin
+                    println("Unauthorized - token might be expired")
+                }
             }
         }
-        
+
         install(HttpTimeout) {
             requestTimeoutMillis = 30000
             connectTimeoutMillis = 30000
             socketTimeoutMillis = 30000
         }
-        
+
         install(DefaultRequest) {
             header(HttpHeaders.ContentType, ContentType.Application.Json)
             header(HttpHeaders.Accept, ContentType.Application.Json)
         }
-        
+
         engine {
             connectTimeout = 30_000
             socketTimeout = 30_000

@@ -41,6 +41,13 @@ class UserPreferences(private val context: Context) {
             .first()
     }
 
+    // Get refresh token synchronously
+    suspend fun getRefreshToken(): String? {
+        return context.dataStore.data
+            .map { preferences -> preferences[REFRESH_TOKEN_KEY] }
+            .first()
+    }
+
     // Save refresh token
     suspend fun saveRefreshToken(token: String) {
         context.dataStore.edit { preferences ->

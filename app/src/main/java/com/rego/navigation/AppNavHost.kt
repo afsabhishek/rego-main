@@ -1,5 +1,4 @@
 package com.rego.navigation
-
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -24,11 +23,19 @@ fun AppNavHost() {
 
     NavHost(navController = navController, startDestination = Destinations.Splash.route) {
         composable(Destinations.Splash.route) {
-            SplashScreen {
-                navController.navigate(Destinations.LoginOptions.route) {
-                    popUpTo(Destinations.Splash.route) { inclusive = true }
+            SplashScreen(
+                gotoLoginOptionScreen = {
+                    navController.navigate(Destinations.LoginOptions.route) {
+                        popUpTo(Destinations.Splash.route) { inclusive = true }
+                    }
+                },
+                gotoHomeScreen = {
+                    // Navigate directly to home when session is valid
+                    navController.navigate(Destinations.Home.route) {
+                        popUpTo(Destinations.Splash.route) { inclusive = true }
+                    }
                 }
-            }
+            )
         }
 
         composable(Destinations.LoginOptions.route) {
@@ -77,14 +84,8 @@ fun AppNavHost() {
                 }
             )
         ) { backStackEntry ->
-            // Extract arguments
             val userId = backStackEntry.arguments?.getString("userId")
             val firebaseUid = backStackEntry.arguments?.getString("firebaseUid")
-
-            // Log for debugging
-            if (userId != null && firebaseUid != null) {
-                println("✅ Home Screen - UserId: $userId, FirebaseUid: $firebaseUid")
-            }
 
             HomeScreen(
                 userId = userId,
@@ -97,15 +98,11 @@ fun AppNavHost() {
                 onRaiseRequest = {
                     navController.navigate(Destinations.RaiseRequest.route)
                 },
-                onGridOptionClick = {
-
-                },
+                onGridOptionClick = { },
                 onOrderClick = {
                     navController.navigate(Destinations.OrderDetails.route)
                 },
-                onSearchClick = {
-                    // Open search screen
-                },
+                onSearchClick = { },
                 onOrderListClick = {
                     navController.navigate(Destinations.OrdersList.createRoute(it))
                 },
@@ -114,6 +111,8 @@ fun AppNavHost() {
                 }
             )
         }
+
+        // ... rest of the routes remain the same ...
 
         composable(Destinations.RaiseRequest.route) {
             RaiseRequestParentScreen(
@@ -145,14 +144,16 @@ fun AppNavHost() {
                 }
             )
         }
-        composable(Destinations.Notification.route) { backStackEntry ->
+
+        composable(Destinations.Notification.route) {
             NotificationScreen(
                 onBack = {
                     navController.popBackStack()
                 }
             )
         }
-        composable(Destinations.Profile.route) { backStackEntry ->
+
+        composable(Destinations.Profile.route) {
             ProfileScreen(
                 onChangePasswordClick = {
                     navController.navigate(Destinations.ResetPassword.route)
@@ -167,7 +168,8 @@ fun AppNavHost() {
                 }
             )
         }
-        composable(Destinations.ResetPassword.route) { backStackEntry ->
+
+        composable(Destinations.ResetPassword.route) {
             SetPasswordParentScreen(
                 onLoginClick = {
                     navController.navigate(Destinations.LoginOptions.route)
