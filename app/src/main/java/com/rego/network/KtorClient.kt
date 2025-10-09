@@ -26,8 +26,8 @@ object ApiRoutes {
     const val INSURANCE_COMPANIES = "/insurance-companies"
     const val JOIN_US_REGISTER = "/auth/signup"
     const val USER_PROFILE = "/user/profile"
+    const val GET_LEADS_STATS = "/leads/stats"
 }
-
 class KtorClient(
     private val userPreferences: UserPreferences? = null
 ) {

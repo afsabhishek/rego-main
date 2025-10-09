@@ -1,14 +1,12 @@
 package com.rego.screens.main.home
-
 import androidx.lifecycle.viewModelScope
 import com.rego.R
 import com.rego.screens.base.BaseViewModel
 import com.rego.screens.base.DataState
 import com.rego.screens.base.ProgressBarState
-import com.rego.screens.components.OrderData
+import com.rego.screens.main.home.data.LeadStatsResponse
 import com.rego.screens.main.profile.ProfileInteractor
 import com.rego.util.UserPreferences
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 class HomeViewModel(
@@ -24,6 +22,12 @@ class HomeViewModel(
             is HomeEvent.Init -> {
                 init()
             }
+            is HomeEvent.RefreshData -> {
+                refreshData()
+            }
+            is HomeEvent.FilterLeads -> {
+                filterLeadsByStatus(event.status)
+            }
         }
     }
 
@@ -36,18 +40,24 @@ class HomeViewModel(
             // Load user profile
             loadUserProfile()
 
-            // Load home data
-            delay(500)
+            // Load lead statistics
+            loadLeadStats()
+
+            // Load ongoing leads
+//            loadOngoingLeads()
+        }
+    }
+
+    private fun refreshData() {
+        viewModelScope.launch {
             setState {
-                copy(
-                    quickFilters = getQuickFilters(),
-                    summaryCards = getSummaryCards(),
-                    ongoingOrdersAll = getOngoingOrdersAll()
-                )
+                copy(progressBarState = ProgressBarState.Refreshing)
             }
-            setState {
-                copy(progressBarState = ProgressBarState.Idle)
-            }
+
+
+            loadLeadStats()
+            /* // Reload stats and leads
+            loadOngoingLeads()*/
         }
     }
 
@@ -60,14 +70,13 @@ class HomeViewModel(
                             setState {
                                 copy(
                                     userName = profile.name,
-                                    userInitial = profile.name.firstOrNull()?.toString() ?: "U"
+                                    userInitial = profile.name.firstOrNull()?.toString()?.uppercase() ?: "U"
                                 )
                             }
                         }
                     }
                     is DataState.Error -> {
-                        // Handle error if needed, but don't block home screen
-                        setError { dataState.uiComponent }
+                        // Handle error silently for profile
                     }
                     else -> {}
                 }
@@ -75,67 +84,141 @@ class HomeViewModel(
         }
     }
 
-    // --- Sample data methods remain the same ---
-    fun getQuickFilters() = listOf(
-        "Work In Progress",
-        "Pickup Aligned",
-        "Part Delivered",
-        "Pickup Done",
-        "Invoice Generated",
-        "Ready for Delivery"
-    )
+    private fun loadLeadStats() {
+        viewModelScope.launch {
+            homeInteractor.getLeadStats().collect { dataState ->
+                when (dataState) {
+                    is DataState.Loading -> {
+                        if (state.value.progressBarState != ProgressBarState.Refreshing) {
+                            setState { copy(progressBarState = dataState.progressBarState) }
+                        }
+                    }
 
-    fun getSummaryCards() = listOf(
-        Triple("New Leads", R.drawable.audience, 0),
-        Triple("Total Leads", R.drawable.total_leads, 0),
-        Triple("Approved", R.drawable.approved, 1),
-        Triple("Not Repairable", R.drawable.not_repairable, 0),
-        Triple("Completed", R.drawable.completed, 1),
-        Triple("Pending", R.drawable.pending, 0)
-    )
+                    is DataState.Data -> {
+                        dataState.data?.let { stats ->
+                            setState {
+                                copy(
+                                    summaryCards = createSummaryCards(stats),
+                                    quickFilters = getQuickFilters(),
+                                    leadStats = stats,
+                                    progressBarState = ProgressBarState.Idle
+                                )
+                            }
+                        }
+                    }
 
-    fun getOngoingOrdersAll() = listOf(
-        OrderData(
-            orderId = "12042501",
-            status = "Pickup Aligned",
-            carMake = "Hyundai i20, 2023",
-            deliveryDate = "21/04/25"
-        ),
-        OrderData(
-            orderId = "13042512",
-            status = "Pickup Aligned",
-            carMake = "Honda City, 2020",
-            deliveryDate = "21/02/24"
-        ),
-        OrderData(
-            orderId = "18049231",
-            status = "Work In Progress",
-            carMake = "Honda City, 2020",
-            deliveryDate = "21/02/24"
-        ),
-        OrderData(
-            orderId = "19002451",
-            status = "Pickup Done",
-            carMake = "Hyundai Verna, 2021",
-            deliveryDate = "22/07/24"
-        ),
-        OrderData(
-            orderId = "11049501",
-            status = "Part Delivered",
-            carMake = "MG Hector, 2022",
-            deliveryDate = "29/11/24"
-        ),
-        OrderData(
-            orderId = "12011111",
-            status = "Invoice Generated",
-            carMake = "Maruti Alto, 2022",
-            deliveryDate = "01/12/24"
-        ),
-        OrderData(
-            orderId = "19005001",
-            status = "Ready for Delivery",
-            carMake = "Suzuki Baleno, 2021",
-            deliveryDate = "10/10/24"
+                    is DataState.Error -> {
+                        setState { copy(progressBarState = ProgressBarState.Idle) }
+                        setError { dataState.uiComponent }
+                    }
+
+                    else -> {}
+                }
+            }
+        }
+    }
+
+    /*
+    private fun loadOngoingLeads(status: String? = null) {
+        viewModelScope.launch {
+            homeInteractor.getLeadsList(
+                status = status,
+                page = 1,
+                limit = 20
+            ).collect { dataState ->
+                when (dataState) {
+                    is DataState.Data -> {
+                        dataState.data?.let { leads ->
+                            setState {
+                                copy(
+                                    ongoingOrdersAll = mapLeadsToOrderData(leads),
+                                    ongoingOrdersFiltered = if (status != null) {
+                                        mapLeadsToOrderData(leads.filter { it.status == status })
+                                    } else {
+                                        mapLeadsToOrderData(leads)
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    is DataState.Error -> {
+                        // Handle error silently for leads list
+                    }
+
+                    else -> {}
+                }
+            }
+        }
+    }*/
+
+    private fun filterLeadsByStatus(status: String?) {
+        if (status == null) {
+            // Show all orders
+            setState {
+                copy(
+                    ongoingOrdersFiltered = ongoingOrdersAll,
+                    selectedFilter = null
+                )
+            }
+        } else {
+            // Filter by status
+            setState {
+                copy(
+                    ongoingOrdersFiltered = ongoingOrdersAll?.filter { it.status == status },
+                    selectedFilter = status
+                )
+            }
+        // Optionally load filtered data from API
+        // loadOngoingLeads(status)
+        }
+    }
+
+    private fun createSummaryCards(stats: LeadStatsResponse.LeadStats): List<Triple<String, Int, Int>> {
+        return listOf(
+            Triple("New Leads", R.drawable.audience, stats.newLeads),
+            Triple("Total Leads", R.drawable.total_leads, stats.totalLeads),
+            Triple("Approved", R.drawable.approved, stats.approved),
+            Triple("Not Repairable", R.drawable.not_repairable, stats.notRepairable),
+            Triple("Completed", R.drawable.completed, stats.completed),
+            Triple("Pending", R.drawable.pending, stats.workInProgress)
         )
-    )
+    }
+
+    private fun getQuickFilters(): List<String> {
+        return listOf(
+            "Work In Progress",
+            "Pickup Aligned",
+            "Part Delivered",
+            "Pickup Done",
+            "Invoice Generated",
+            "Ready for Delivery"
+        )
+    }
+
+   /* private fun mapLeadsToOrderData(leads: List<Lead>): List<OrderData> {
+        return leads.map { lead ->
+            OrderData(
+                orderId = lead.leadId,
+                status = lead.status,
+                carMake = "${lead.carMake} ${lead.carModel}, ${lead.makeYear}",
+                deliveryDate = formatDate(lead.targetDeliveryDate),
+                dealerName = lead.dealerName,
+                dealerLocation = lead.dealerLocation
+            )
+        }
+    }
+
+    private fun formatDate(dateString: String?): String {
+        if (dateString == null) return "TBD"
+
+        return try {
+            val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
+            val outputFormat = SimpleDateFormat("dd/MM/yy", Locale.getDefault())
+            val date = inputFormat.parse(dateString)
+            date?.let { outputFormat.format(it) } ?: "TBD"
+        } catch (e: Exception) {
+            "TBD"
+        }
+    }*/
 }

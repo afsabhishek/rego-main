@@ -29,7 +29,6 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -46,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.rego.R
 import com.rego.screens.base.DefaultScreenUI
+import com.rego.screens.base.ProgressBarState
 import com.rego.screens.components.OrderCard
 import com.rego.ui.theme.Color00954D
 import com.rego.ui.theme.Color1A1A1A_16
@@ -69,29 +69,43 @@ fun HomeScreen(
     onOrderListClick: (String) -> Unit = {},
     onNotificationClick: () -> Unit = {},
 ) {
-
     val homeViewModel: HomeViewModel = koinViewModel()
     val errors = homeViewModel.errors
-    val state = homeViewModel.state.collectAsState()
+    val state by homeViewModel.state.collectAsState()
     val events = homeViewModel::onTriggerEvent
+
     LaunchedEffect(Unit) {
         events(HomeEvent.Init)
     }
+
     Box(
         modifier = Modifier.fillMaxWidth()
     ) {
         DefaultScreenUI(
-            progressBarState = state.value.progressBarState,
-            isBottomBarInScreen = true
+            progressBarState = state.progressBarState,
+            isBottomBarInScreen = true,
+            isRefreshingEnabled = true,
+            onRefresh = {
+                events(HomeEvent.RefreshData)
+            },
+            errors = errors
         ) { paddingValues ->
-            TopBarSection(paddingValues, onNotificationClick = onNotificationClick)
+            TopBarSection(
+                paddingValues = paddingValues,
+                userName = state.userName ?: "User",
+                userInitial = state.userInitial,
+                onNotificationClick = onNotificationClick
+            )
             HomeScreenContent(
-                state,
+                state = state,
                 onRaiseRequest = onRaiseRequest,
                 onGridOptionClick = onGridOptionClick,
                 onOrderClick = onOrderClick,
                 onOrderListClick = onOrderListClick,
-                onNotificationClick = onNotificationClick
+                onNotificationClick = onNotificationClick,
+                onFilterClick = { filter ->
+                    events(HomeEvent.FilterLeads(filter))
+                }
             )
         }
         BottomNavBar(
@@ -99,9 +113,7 @@ fun HomeScreen(
                 .align(Alignment.BottomEnd)
                 .fillMaxWidth(),
             isHomeSelected = true,
-            onHomeClick = {
-
-            },
+            onHomeClick = { },
             onProfileClick = onProfileClick
         )
     }
@@ -109,22 +121,20 @@ fun HomeScreen(
 
 @Composable
 fun HomeScreenContent(
-    state: State<HomeViewState>,
+    state: HomeViewState,
     modifier: Modifier = Modifier,
     onRaiseRequest: () -> Unit,
     onGridOptionClick: () -> Unit,
     onOrderClick: () -> Unit,
     onOrderListClick: (String) -> Unit = {},
-    onNotificationClick: () -> Unit = {}
+    onNotificationClick: () -> Unit = {},
+    onSearchClick: () -> Unit = {},
+    onFilterClick: (String?) -> Unit = {}
 ) {
-    // State for expand/collapse ongoing order card and filters
     var expandedCard by remember { mutableStateOf<String?>(null) }
-    var selectedQuickFilter by remember { mutableStateOf<String?>(null) }
 
-    // Filter orders
-    val ongoingOrders = state.value.ongoingOrdersAll?.filter {
-        selectedQuickFilter == null || it.status == selectedQuickFilter
-    } ?: emptyList()
+    // Use filtered orders if available, otherwise use all orders
+    val displayOrders = state.ongoingOrdersFiltered ?: state.ongoingOrdersAll ?: emptyList()
 
     Box(
         modifier = Modifier
@@ -146,13 +156,15 @@ fun HomeScreenContent(
                 .background(Color.Transparent)
         ) {
             Spacer(modifier = Modifier.height(16.dp))
+
             // SEARCH BAR
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 18.dp)
                     .background(Color.White, RoundedCornerShape(10.dp))
-                    .height(48.dp),
+                    .height(48.dp)
+                    .clickable { onSearchClick() },
                 contentAlignment = Alignment.CenterStart
             ) {
                 Row(
@@ -233,70 +245,85 @@ fun HomeScreenContent(
                     )
                 }
             }
+
             Spacer(modifier = Modifier.height(16.dp))
+
             // ONGOING ORDERS SECTION
             LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(800.dp)
+                    .weight(1f)
             ) {
-                if (state.value.summaryCards?.isNotEmpty() == true) {
+                // Summary Cards Section
+                if (state.summaryCards?.isNotEmpty() == true) {
                     item {
-                        // SUMMARY CARDS GRID - 2x2 grid layout
+                        // SUMMARY CARDS GRID - 2x3 grid layout (6 cards total)
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 18.dp)
                         ) {
+                            // First row (2 cards)
                             Row(
                                 horizontalArrangement = Arrangement.spacedBy(14.dp),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
-                                state.value.summaryCards?.take(2)
+                                state.summaryCards?.take(2)
                                     ?.forEach { (label, iconRes, value) ->
                                         SummaryCard(
                                             label = label,
                                             iconRes = iconRes,
                                             value = value,
                                             onClick = { onOrderListClick(label) },
-                                            modifier = Modifier
-                                                .weight(1f)
+                                            modifier = Modifier.weight(1f)
                                         )
                                     }
                             }
+
                             Spacer(modifier = Modifier.height(12.dp))
+
+                            // Second row (2 cards)
                             Row(
                                 horizontalArrangement = Arrangement.spacedBy(14.dp),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
-                                state.value.summaryCards?.subList(2, 4)
-                                    ?.forEach { (label, iconRes, value) ->
-                                        SummaryCard(
-                                            label = label,
-                                            iconRes = iconRes,
-                                            value = value,
-                                            onClick = { onOrderListClick(label) },
-                                            modifier = Modifier
-                                                .weight(1f)
-                                        )
+                                state.summaryCards?.let { cards ->
+                                    if (cards.size > 2) {
+                                        cards.subList(2, minOf(4, cards.size))
+                                            .forEach { (label, iconRes, value) ->
+                                                SummaryCard(
+                                                    label = label,
+                                                    iconRes = iconRes,
+                                                    value = value,
+                                                    onClick = { onOrderListClick(label) },
+                                                    modifier = Modifier.weight(1f)
+                                                )
+                                            }
                                     }
+                                }
                             }
+
                             Spacer(modifier = Modifier.height(12.dp))
+
+                            // Third row (2 cards)
                             Row(
                                 horizontalArrangement = Arrangement.spacedBy(14.dp),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
-                                state.value.summaryCards?.subList(4, 6)
-                                    ?.forEach { (label, iconRes, value) ->
-                                        SummaryCard(
-                                            label = label,
-                                            iconRes = iconRes,
-                                            value = value,
-                                            onClick = { onOrderListClick(label) },
-                                            modifier = Modifier
-                                                .weight(1f)
-                                        )
+                                state.summaryCards?.let { cards ->
+                                    if (cards.size > 4) {
+                                        cards.subList(4, minOf(6, cards.size))
+                                            .forEach { (label, iconRes, value) ->
+                                                SummaryCard(
+                                                    label = label,
+                                                    iconRes = iconRes,
+                                                    value = value,
+                                                    onClick = { onOrderListClick(label) },
+                                                    modifier = Modifier.weight(1f)
+                                                )
+                                            }
                                     }
+                                }
                             }
                         }
 
@@ -307,6 +334,8 @@ fun HomeScreenContent(
                         )
                     }
                 }
+
+                // Ongoing Orders Header
                 item {
                     Column(
                         modifier = Modifier
@@ -325,18 +354,23 @@ fun HomeScreenContent(
                                 style = fontSemiBoldPoppins().copy(fontSize = 16.sp),
                                 color = Color(0xE61A1A1A)
                             )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "(${ongoingOrders?.size})",
-                                style = fontMediumPoppins().copy(fontSize = 15.sp),
-                                color = Color(0xFFFF514F)
-                            )
+                            // Only show count if greater than 0
+                            if (displayOrders.isNotEmpty()) {
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "(${displayOrders.size})",
+                                    style = fontMediumPoppins().copy(fontSize = 15.sp),
+                                    color = Color(0xFFFF514F)
+                                )
+                            }
                             Spacer(modifier = Modifier.weight(1f))
                             Text(
                                 text = "View All",
                                 style = fontMediumPoppins().copy(fontSize = 12.sp),
                                 color = Color(0xFF00954D),
-                                modifier = Modifier.clickable { onOrderListClick("Ongoing Orders") }
+                                modifier = Modifier.clickable {
+                                    onOrderListClick("Ongoing Orders")
+                                }
                             )
                         }
                         Text(
@@ -355,57 +389,84 @@ fun HomeScreenContent(
                     }
                 }
 
-                item {
-                    // Quick Filters Row (selectable)
-                    Spacer(modifier = Modifier.height(10.dp))
-                    LazyRow(contentPadding = PaddingValues(horizontal = 16.dp)) {
-                        val quickFilters = state.value.quickFilters
-                        if (quickFilters?.isNotEmpty() == true) {
-                            items(quickFilters) { filter ->
-                                val selected = filter == selectedQuickFilter
-                                Box(
-                                    modifier = Modifier
-                                        .padding(end = 8.dp)
-                                        .background(
-                                            if (selected) Color00954D else Color.White,
-                                            RoundedCornerShape(21.dp)
+                // Quick Filters
+                if (displayOrders.isNotEmpty()) {
+                    item {
+                        Spacer(modifier = Modifier.height(10.dp))
+                        LazyRow(contentPadding = PaddingValues(horizontal = 16.dp)) {
+                            val quickFilters = state.quickFilters
+                            if (quickFilters?.isNotEmpty() == true) {
+                                items(quickFilters) { filter ->
+                                    val selected = filter == state.selectedFilter
+                                    Box(
+                                        modifier = Modifier
+                                            .padding(end = 8.dp)
+                                            .background(
+                                                if (selected) Color00954D else Color.White,
+                                                RoundedCornerShape(21.dp)
+                                            )
+                                            .border(
+                                                1.dp,
+                                                Color1A1A1A_16(),
+                                                RoundedCornerShape(21.dp)
+                                            )
+                                            .clickable {
+                                                onFilterClick(if (selected) null else filter)
+                                            }
+                                    ) {
+                                        Text(
+                                            text = filter,
+                                            style = fontMediumPoppins().copy(fontSize = 10.sp),
+                                            color = if (selected) Color.White else Color1A1A1A_60(),
+                                            modifier = Modifier.padding(
+                                                horizontal = 13.dp,
+                                                vertical = 7.dp
+                                            )
                                         )
-                                        .border(1.dp, Color1A1A1A_16(), RoundedCornerShape(21.dp))
-                                        .clickable {
-                                            selectedQuickFilter = if (selected) null else filter
-                                        }
-                                ) {
-                                    Text(
-                                        text = filter,
-                                        style = fontMediumPoppins().copy(fontSize = 10.sp),
-                                        color = if (selected) Color.White else Color1A1A1A_60(),
-                                        modifier = Modifier.padding(
-                                            horizontal = 13.dp,
-                                            vertical = 7.dp
-                                        )
-                                    )
+                                    }
                                 }
                             }
                         }
+                        Spacer(modifier = Modifier.height(14.dp))
                     }
-                    Spacer(modifier = Modifier.height(14.dp))
                 }
 
-                // Ongoing Order Cards
-                items(ongoingOrders) { order ->
-                    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-                        OrderCard(
-                            order = order,
-                            orderType = "Ongoing Order",
-                            isExpanded = expandedCard == order.orderId,
-                            onToggleExpanded = {
-                                expandedCard =
-                                    if (expandedCard == order.orderId) null else order.orderId
-                            },
-                            onCardClick = { onOrderClick() },
-                        )
-                        Spacer(modifier = Modifier.height(11.dp))
+                // Order Cards
+                if (displayOrders.isEmpty() && state.progressBarState == ProgressBarState.Idle) {
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(200.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "No orders found",
+                                style = fontMediumPoppins().copy(fontSize = 14.sp),
+                                color = Color1A1A1A_60()
+                            )
+                        }
                     }
+                } else {
+                    items(displayOrders) { order ->
+                        Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+                            OrderCard(
+                                order = order,
+                                orderType = "Ongoing Order",
+                                isExpanded = expandedCard == order.orderId,
+                                onToggleExpanded = {
+                                    expandedCard = if (expandedCard == order.orderId) null else order.orderId
+                                },
+                                onCardClick = { onOrderClick() },
+                            )
+                            Spacer(modifier = Modifier.height(11.dp))
+                        }
+                    }
+                }
+
+                // Bottom padding for navigation bar
+                item {
+                    Spacer(modifier = Modifier.height(80.dp))
                 }
             }
         }
@@ -476,20 +537,6 @@ fun SummaryCard(
     }
 }
 
-/*@Preview(showBackground = true, heightDp = 800)
-@Composable
-fun HomeScreenContentPreview() {
-    NativeAndroidBaseArchitectureTheme {
-        HomeScreenContent(
-            state = ,
-            onRaiseRequest = {},
-            onOrderClick = {},
-            onGridOptionClick = {},
-            onOrderListClick = {}
-        )
-    }
-}*/
-
 @Composable
 fun BottomNavBar(
     modifier: Modifier = Modifier,
@@ -512,7 +559,8 @@ fun BottomNavBar(
                     contentDescription = "Home"
                 )
             },
-            label = { Text("Home") })
+            label = { Text("Home") }
+        )
         NavigationBarItem(
             selected = isProfileSelected,
             onClick = {
@@ -526,14 +574,21 @@ fun BottomNavBar(
                     contentDescription = "Profile",
                 )
             },
-            label = { Text("Profile") })
+            label = { Text("Profile") }
+        )
     }
 }
 
 @Composable
-fun TopBarSection(paddingValues: PaddingValues, onNotificationClick: () -> Unit) {
+fun TopBarSection(
+    paddingValues: PaddingValues,
+    userName: String,
+    userInitial: String,
+    onNotificationClick: () -> Unit
+) {
     Box(
-        modifier = Modifier.background(Color00954D)
+        modifier = Modifier
+            .background(Color00954D)
             .fillMaxWidth()
             .padding(top = paddingValues.calculateTopPadding())
             .padding(horizontal = 20.dp, vertical = 20.dp)
@@ -544,8 +599,7 @@ fun TopBarSection(paddingValues: PaddingValues, onNotificationClick: () -> Unit)
         ) {
             // Profile circle with menu icon overlay
             Box(modifier = Modifier.size(42.dp)) {
-                Text(
-                    text = "A",
+                Box(
                     modifier = Modifier
                         .size(32.dp)
                         .border(
@@ -554,15 +608,18 @@ fun TopBarSection(paddingValues: PaddingValues, onNotificationClick: () -> Unit)
                             shape = RoundedCornerShape(100.dp)
                         )
                         .background(Color.Transparent, shape = RoundedCornerShape(100.dp)),
-                    // Replace fontSemiBold() below with your font semi-bold style if required
-                    style = fontSemiBoldPoppins().copy(fontSize = 22.sp),
-                    color = Color.White,
-                    textAlign = TextAlign.Center
-                )
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = userInitial,
+                        style = fontSemiBoldPoppins().copy(fontSize = 22.sp),
+                        color = Color.White,
+                        textAlign = TextAlign.Center
+                    )
+                }
                 // Menu icon overlay (positioned at bottom-end)
                 Box(
                     modifier = Modifier
-
                         .align(Alignment.BottomEnd)
                         .size(20.dp)
                         .background(Color.White, shape = RoundedCornerShape(100.dp)),
@@ -571,13 +628,15 @@ fun TopBarSection(paddingValues: PaddingValues, onNotificationClick: () -> Unit)
                     Icon(
                         painter = painterResource(R.drawable.menu),
                         contentDescription = "Menu",
+                        tint = Color.Gray,
+                        modifier = Modifier.size(12.dp)
                     )
                 }
             }
             Spacer(modifier = Modifier.width(10.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Welcome Ayush,",
+                    text = "Welcome ${userName.split(" ").firstOrNull() ?: userName},",
                     style = fontSemiBoldPoppins().copy(fontSize = 16.sp),
                     color = Color.White
                 )
@@ -587,9 +646,7 @@ fun TopBarSection(paddingValues: PaddingValues, onNotificationClick: () -> Unit)
                 contentDescription = "Notification",
                 modifier = Modifier
                     .size(22.dp)
-                    .clickable {
-                        onNotificationClick()
-                    },
+                    .clickable { onNotificationClick() },
                 tint = Color.White
             )
         }

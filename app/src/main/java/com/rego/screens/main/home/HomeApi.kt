@@ -1,7 +1,7 @@
 package com.rego.screens.main.home
 
-import com.rego.CommonResponse
+import com.rego.screens.main.home.data.LeadStatsResponse
 
 interface HomeApi {
-    fun getHomeData(): CommonResponse<String> //Replace this by actual response class
+    suspend fun getLeadStats(authToken: String): LeadStatsResponse
 }

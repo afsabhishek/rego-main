@@ -1,4 +1,5 @@
 package com.rego.di
+
 import com.rego.screens.loginoption.LoginOptionViewModel
 import com.rego.screens.main.home.HomeApi
 import com.rego.screens.main.home.HomeApiImpl
@@ -61,8 +62,17 @@ val appModule = module {
 
     viewModel { LoginOptionViewModel() }
 
-    factory<HomeApi> { HomeApiImpl() }
-    factory { HomeInteractor(get()) }
+    factory<HomeApi> {
+        HomeApiImpl(
+            ktorClient = get()
+        )
+    }
+    factory {
+        HomeInteractor(
+            homeApi = get(),
+            userPreferences = get()
+        )
+    }
     viewModel {
         HomeViewModel(
             homeInteractor = get(),
