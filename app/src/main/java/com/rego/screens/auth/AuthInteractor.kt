@@ -15,77 +15,106 @@ class AuthInteractor(
 
     suspend fun refreshTokenIfNeeded(): Flow<AuthResult> = flow {
         try {
-            // First check if we have tokens
+            // Get current tokens
             val currentAuthToken = userPreferences.getAuthToken()
             val currentRefreshToken = userPreferences.getRefreshToken()
             val firebaseIdToken = userPreferences.getFirebaseIdToken()
 
+            println("🔍 Checking session...")
+            println("Backend token exists: ${currentAuthToken != null}")
+            println("Refresh token exists: ${currentRefreshToken != null}")
+            println("Firebase token exists: ${firebaseIdToken != null}")
+
+            // If no backend token or refresh token, user needs to login
             if (currentAuthToken == null || currentRefreshToken == null) {
+                println("❌ No authentication tokens found")
                 emit(AuthResult.NotAuthenticated)
                 return@flow
             }
 
             // Check if backend token is expired
             val isBackendTokenExpired = userPreferences.isAuthTokenExpired()
+            println("Backend token expired: $isBackendTokenExpired")
 
-            // Check if Firebase token is expired
-            val isFirebaseTokenExpired = userPreferences.isFirebaseTokenExpired()
+            // Check if Firebase token is expired (if exists)
+            val isFirebaseTokenExpired = if (firebaseIdToken != null) {
+                userPreferences.isFirebaseTokenExpired()
+            } else {
+                false
+            }
+            println("Firebase token expired: $isFirebaseTokenExpired")
 
+            // If both tokens are valid, authenticate successfully
             if (!isBackendTokenExpired && !isFirebaseTokenExpired) {
-                // Both tokens are valid
+                println("✅ All tokens valid - user authenticated")
                 emit(AuthResult.Authenticated(currentAuthToken, firebaseIdToken))
                 return@flow
             }
 
             // Refresh Firebase token if needed
-            if (isFirebaseTokenExpired) {
-                firebaseAuthManager.refreshToken().first().let { result ->
-                    when (result) {
-                        is TokenResult.Success -> {
-                            // Firebase token refreshed successfully
-                            userPreferences.saveFirebaseIdToken(
-                                result.token,
-                                3600 // 1 hour expiry, adjust as needed
-                            )
-                        }
-                        is TokenResult.Error -> {
-                            // Failed to refresh Firebase token
-                            emit(AuthResult.Error("Failed to refresh Firebase token: ${result.message}"))
-                            return@flow
+            if (firebaseIdToken != null && isFirebaseTokenExpired) {
+                println("🔄 Refreshing Firebase token...")
+                try {
+                    firebaseAuthManager.refreshToken().first().let { result ->
+                        when (result) {
+                            is TokenResult.Success -> {
+                                println("✅ Firebase token refreshed")
+                                userPreferences.saveFirebaseIdToken(result.token, 3600)
+                            }
+                            is TokenResult.Error -> {
+                                println("⚠️ Firebase token refresh failed: ${result.message}")
+                                // Continue with backend token only
+                            }
                         }
                     }
+                } catch (e: Exception) {
+                    println("⚠️ Firebase token refresh error: ${e.message}")
+                    // Continue with backend token only
                 }
             }
 
             // Refresh backend token if needed
             if (isBackendTokenExpired) {
-                val response = authApi.refreshToken(currentRefreshToken)
+                println("🔄 Refreshing backend token...")
+                try {
+                    val response = authApi.refreshToken(currentRefreshToken)
 
-                if (response.success && response.data != null) {
-                    // Save new backend tokens
-                    userPreferences.saveAuthToken(
-                        response.data.authToken,
-                        response.data.expiresIn
-                    )
-                    userPreferences.saveRefreshToken(response.data.refreshToken)
+                    if (response.success && response.data != null) {
+                        println("✅ Backend token refreshed")
 
-                    // Get updated Firebase token
-                    val updatedFirebaseToken = userPreferences.getFirebaseIdToken()
+                        // Save new backend tokens
+                        userPreferences.saveAuthToken(
+                            response.data.authToken,
+                            response.data.expiresIn
+                        )
+                        userPreferences.saveRefreshToken(response.data.refreshToken)
 
-                    emit(AuthResult.TokenRefreshed(response.data.authToken, updatedFirebaseToken))
-                } else {
-                    // Refresh failed, user needs to login again
+                        // Get updated Firebase token
+                        val updatedFirebaseToken = userPreferences.getFirebaseIdToken()
+
+                        emit(AuthResult.TokenRefreshed(response.data.authToken, updatedFirebaseToken))
+                    } else {
+                        println("❌ Token refresh failed: ${response.message}")
+                        // Refresh failed, clear data and require login
+                        userPreferences.clearAll()
+                        firebaseAuthManager.signOut()
+                        emit(AuthResult.RefreshFailed(response.message ?: "Session expired. Please login again."))
+                    }
+                } catch (e: Exception) {
+                    println("❌ Token refresh exception: ${e.message}")
+                    e.printStackTrace()
                     userPreferences.clearAll()
                     firebaseAuthManager.signOut()
-                    emit(AuthResult.RefreshFailed(response.message ?: "Session expired. Please login again."))
+                    emit(AuthResult.RefreshFailed("Session expired. Please login again."))
                 }
             } else {
-                // Backend token is valid, Firebase token was refreshed
+                // Backend token is valid, Firebase token was refreshed if needed
                 val updatedFirebaseToken = userPreferences.getFirebaseIdToken()
                 emit(AuthResult.Authenticated(currentAuthToken, updatedFirebaseToken))
             }
 
         } catch (e: Exception) {
+            println("❌ Authentication check failed: ${e.message}")
             e.printStackTrace()
             emit(AuthResult.Error(e.message ?: "Authentication check failed"))
         }
