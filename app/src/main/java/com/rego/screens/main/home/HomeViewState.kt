@@ -5,6 +5,7 @@ import com.rego.screens.base.ProgressBarState
 import com.rego.screens.base.ViewState
 import com.rego.screens.components.OrderData
 import com.rego.screens.main.home.data.LeadStatsResponse
+import com.rego.screens.main.home.data.LeadsResponse
 
 @Immutable
 data class HomeViewState(
@@ -17,5 +18,27 @@ data class HomeViewState(
     val userInitial: String = "U",
     val leadStats: LeadStatsResponse.LeadStats? = null,
     val selectedFilter: String? = null,
-    val error: String? = null
-) : ViewState
+    val error: String? = null,
+
+    // New properties for enhanced functionality
+    val isRefreshing: Boolean = false,
+    val isLoadingMore: Boolean = false,
+    val cardCounts: Map<String, Int> = emptyMap(),
+    val leads: List<LeadsResponse.LeadsData.Lead> = emptyList(),
+    val searchQuery: String = "",
+    val isSearching: Boolean = false,
+    val searchResults: List<OrderData>? = null,
+    val pagination: LeadsResponse.LeadsData.Pagination? = null,
+    val currentPage: Int = 1,
+    val hasMorePages: Boolean = false,
+    val statsError: String? = null,
+    val leadsError: String? = null
+) : ViewState {
+    // Helper property for UI
+    val displayOrders: List<OrderData>
+        get() = when {
+            searchResults != null -> searchResults
+            ongoingOrdersFiltered != null -> ongoingOrdersFiltered
+            else -> ongoingOrdersAll ?: emptyList()
+        }
+}

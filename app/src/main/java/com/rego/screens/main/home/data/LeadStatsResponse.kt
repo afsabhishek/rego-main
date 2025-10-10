@@ -25,18 +25,6 @@ data class LeadStatsResponse(
         @SerialName("completed")
         val completed: Int,
         @SerialName("workInProgress")
-        val workInProgress: Int,
-       /* @SerialName("pending")
-        val pending: Int,
-        @SerialName("pickupAligned")
-        val pickupAligned: Int,
-        @SerialName("partDelivered")
-        val partDelivered: Int,
-        @SerialName("pickupDone")
-        val pickupDone: Int,
-        @SerialName("invoiceGenerated")
-        val invoiceGenerated: Int,
-        @SerialName("readyForDelivery")
-        val readyForDelivery: Int*/
+        val workInProgress: Int
     )
 }
