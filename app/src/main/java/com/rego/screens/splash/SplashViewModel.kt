@@ -17,15 +17,10 @@ class SplashViewModel(
     private val _navigationEvent = MutableStateFlow<SplashNavigationEvent?>(null)
     val navigationEvent: StateFlow<SplashNavigationEvent?> = _navigationEvent.asStateFlow()
 
-    private val _isLoading = MutableStateFlow(true)
-    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
-
     fun checkSession() {
         viewModelScope.launch {
-            _isLoading.value = true
-
             // Add minimum splash display time for better UX
-            delay(1000)
+            delay(1500)
 
             try {
                 authInteractor.refreshTokenIfNeeded().collect { result ->
@@ -34,35 +29,30 @@ class SplashViewModel(
                             // Valid session exists, go directly to home
                             println("✅ Session valid - navigating to home")
                             _navigationEvent.value = SplashNavigationEvent.NavigateToHome
-                            _isLoading.value = false
                         }
 
                         is AuthResult.TokenRefreshed -> {
                             // Token was successfully refreshed, go to home
                             println("✅ Token refreshed - navigating to home")
                             _navigationEvent.value = SplashNavigationEvent.NavigateToHome
-                            _isLoading.value = false
                         }
 
                         is AuthResult.NotAuthenticated -> {
                             // No session found, go to login
                             println("❌ No session - navigating to login")
                             _navigationEvent.value = SplashNavigationEvent.NavigateToLogin
-                            _isLoading.value = false
                         }
 
                         is AuthResult.RefreshFailed -> {
                             // Session expired or refresh failed, go to login
                             println("❌ Session expired: ${result.message}")
                             _navigationEvent.value = SplashNavigationEvent.NavigateToLogin
-                            _isLoading.value = false
                         }
 
                         is AuthResult.Error -> {
                             // Error occurred, go to login
                             println("❌ Auth error: ${result.message}")
                             _navigationEvent.value = SplashNavigationEvent.NavigateToLogin
-                            _isLoading.value = false
                         }
                     }
                 }
@@ -70,7 +60,6 @@ class SplashViewModel(
                 println("❌ Exception during session check: ${e.message}")
                 e.printStackTrace()
                 _navigationEvent.value = SplashNavigationEvent.NavigateToLogin
-                _isLoading.value = false
             }
         }
     }

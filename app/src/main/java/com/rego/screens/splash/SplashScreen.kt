@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -38,7 +37,6 @@ fun SplashScreen(
 ) {
     val viewModel: SplashViewModel = koinViewModel()
     val navigationEvent by viewModel.navigationEvent.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
 
     // Check session when screen loads
     LaunchedEffect(Unit) {
@@ -91,15 +89,6 @@ fun SplashScreen(
                 text = "INSURER APP",
                 style = fontBoldMontserrat().copy(color = Color.White, letterSpacing = 4.sp)
             )
-
-            // Show loading indicator while checking session
-            if (isLoading) {
-                Spacer(modifier = Modifier.height(40.dp))
-                CircularProgressIndicator(
-                    color = Color.White,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
         }
     }
 }
