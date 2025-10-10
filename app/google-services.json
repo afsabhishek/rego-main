@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "872004776735",
+    "project_id": "rego-2e3f3",
+    "storage_bucket": "rego-2e3f3.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:872004776735:android:fe63da1ca0deb4cf52362a",
+        "android_client_info": {
+          "package_name": "com.rego"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCYykKYXUKyoziEGjwQDrR2LIDoV0dqtl0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

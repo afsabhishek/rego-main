@@ -4,47 +4,68 @@ import androidx.lifecycle.viewModelScope
 import com.rego.screens.base.BaseViewModel
 import com.rego.screens.base.DataState
 import com.rego.screens.base.ProgressBarState
+import com.rego.screens.main.home.data.LeadsResponse
 import kotlinx.coroutines.launch
 
-class OrderDetailsViewModel(private val interactor: OrderDetailsInteractor) :
-    BaseViewModel<OrderDetailsEvent, OrderDetailsViewState, OrderDetailsAction>() {
+class OrderDetailsViewModel(
+    private val interactor: OrderDetailsInteractor
+) : BaseViewModel<OrderDetailsEvent, OrderDetailsViewState, OrderDetailsAction>() {
 
     override fun setInitialState() = OrderDetailsViewState()
 
     override fun onTriggerEvent(event: OrderDetailsEvent) {
         when (event) {
             is OrderDetailsEvent.Init -> {
-                loadOrders(0)
+                // Initial state, waiting for specific actions
             }
 
-            is OrderDetailsEvent.LoadOrders -> {
-                loadOrders(event.partTypeIndex)
+            is OrderDetailsEvent.LoadLeadDetails -> {
+                loadLeadDetails(event.leadId)
             }
 
-            is OrderDetailsEvent.SelectOrder -> {
-                setState { copy(selectedOrderId = event.orderId) }
+            is OrderDetailsEvent.LoadLeadsByStatus -> {
+                loadLeadsByStatus(event.status, event.page)
             }
 
-            is OrderDetailsEvent.LoadOrderDetails -> {
-                loadOrderDetails(event.orderId)
+            is OrderDetailsEvent.RetryLoadDetails -> {
+                state.value.selectedLeadId?.let { leadId ->
+                    loadLeadDetails(leadId)
+                }
+            }
+
+            is OrderDetailsEvent.LoadMoreLeads -> {
+                loadMoreLeads()
             }
         }
     }
 
-    private fun loadOrders(type: Int) {
+    private fun loadLeadDetails(leadId: String) {
         viewModelScope.launch {
-            interactor.getOrderList().collect { dataState ->
+            setState { copy(selectedLeadId = leadId) }
+
+            interactor.getLeadById(leadId).collect { dataState ->
                 when (dataState) {
-                    is DataState.Loading -> setState { copy(progressBarState = dataState.progressBarState) }
-                    is DataState.Data -> setState {
-                        copy(
-                            orderListByType = dataState.data,
-                            progressBarState = ProgressBarState.Idle
-                        )
+                    is DataState.Loading -> {
+                        setState { copy(progressBarState = dataState.progressBarState) }
+                    }
+
+                    is DataState.Data -> {
+                        setState {
+                            copy(
+                                selectedLead = dataState.data,
+                                progressBarState = ProgressBarState.Idle,
+                                error = null
+                            )
+                        }
                     }
 
                     is DataState.Error -> {
-                        setState { copy(progressBarState = ProgressBarState.Idle) }
+                        setState {
+                            copy(
+                                progressBarState = ProgressBarState.Idle,
+                                error = "Failed to load lead details"
+                            )
+                        }
                         setError { dataState.uiComponent }
                     }
 
@@ -54,26 +75,66 @@ class OrderDetailsViewModel(private val interactor: OrderDetailsInteractor) :
         }
     }
 
-    private fun loadOrderDetails(orderId: String) {
+    private fun loadLeadsByStatus(status: String?, page: Int = 1, append: Boolean = false) {
         viewModelScope.launch {
-            interactor.getOrderDetails(orderId).collect { dataState ->
+            if (!append) {
+                setState { copy(currentStatus = status, currentPage = page) }
+            }
+
+            interactor.getLeadsByStatus(status, page).collect { dataState ->
                 when (dataState) {
-                    is DataState.Loading -> setState { copy(progressBarState = dataState.progressBarState) }
-                    is DataState.Data -> setState {
-                        copy(
-                            selectedOrderDetails = dataState.data,
-                            progressBarState = ProgressBarState.Idle
-                        )
+                    is DataState.Loading -> {
+                        setState {
+                            copy(
+                                progressBarState = dataState.progressBarState,
+                                isLoadingMore = append
+                            )
+                        }
+                    }
+
+                    is DataState.Data -> {
+                        val newLeads = dataState.data?.leads ?: emptyList()
+
+                        setState {
+                            copy(
+                                leads = if (append) leads + newLeads else newLeads,
+                                pagination = dataState.data?.pagination,
+                                currentPage = page,
+                                hasMorePages = dataState.data?.pagination?.hasNext ?: false,
+                                progressBarState = ProgressBarState.Idle,
+                                isLoadingMore = false,
+                                error = null
+                            )
+                        }
                     }
 
                     is DataState.Error -> {
-                        setState { copy(progressBarState = ProgressBarState.Idle) }
-                        setError { dataState.uiComponent }
+                        setState {
+                            copy(
+                                progressBarState = ProgressBarState.Idle,
+                                isLoadingMore = false,
+                                error = "Failed to load leads"
+                            )
+                        }
+                        if (!append) {
+                            setError { dataState.uiComponent }
+                        }
                     }
 
                     else -> {}
                 }
             }
         }
+    }
+
+    private fun loadMoreLeads() {
+        if (state.value.isLoadingMore || !state.value.hasMorePages) return
+
+        val nextPage = state.value.currentPage + 1
+        loadLeadsByStatus(
+            status = state.value.currentStatus,
+            page = nextPage,
+            append = true
+        )
     }
 }

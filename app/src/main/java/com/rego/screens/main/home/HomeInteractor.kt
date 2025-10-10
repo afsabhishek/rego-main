@@ -1,4 +1,5 @@
 package com.rego.screens.main.home
+
 import com.rego.screens.base.DataState
 import com.rego.screens.base.ProgressBarState
 import com.rego.screens.base.UIComponent
@@ -13,11 +14,10 @@ class HomeInteractor(
     private val userPreferences: UserPreferences
 ) {
 
-    fun getLeadStats(): Flow<DataState<LeadStatsResponse.LeadStats>> = flow {
+    fun getLeadStats(): Flow<DataState<List<LeadStatsResponse.LeadStatItem>>> = flow {
         try {
             emit(DataState.Loading(progressBarState = ProgressBarState.Loading))
 
-            // Get auth token from preferences
             val authToken = userPreferences.getAuthToken()
 
             if (authToken.isNullOrEmpty()) {
@@ -42,7 +42,7 @@ class HomeInteractor(
                     DataState.Error(
                         UIComponent.Dialog(
                             title = "Error",
-                            message = response.message ?: "Failed to load statistics"
+                            message = "Failed to load statistics"
                         )
                     )
                 )
@@ -63,6 +63,7 @@ class HomeInteractor(
             emit(DataState.Loading(progressBarState = ProgressBarState.Idle))
         }
     }
+
     fun getLeadsList(
         status: String? = null,
         partType: String? = null,
@@ -129,38 +130,6 @@ class HomeInteractor(
             if (showLoading) {
                 emit(DataState.Loading(progressBarState = ProgressBarState.Idle))
             }
-        }
-    }
-
-    fun getLeadCounts(): Flow<DataState<Map<String, Int>>> = flow {
-        try {
-            val authToken = userPreferences.getAuthToken()
-            if (authToken.isNullOrEmpty()) {
-                emit(
-                    DataState.Error(
-                        UIComponent.ErrorData(
-                            title = "Authentication Error",
-                            message = "Please login again",
-                            buttonText = "Login"
-                        )
-                    )
-                )
-                return@flow
-            }
-
-            val counts = homeApi.getLeadCounts(authToken)
-            emit(DataState.Data(counts))
-
-        } catch (e: Exception) {
-            e.printStackTrace()
-            emit(
-                DataState.Error(
-                    UIComponent.Dialog(
-                        title = "Error",
-                        message = "Failed to load counts"
-                    )
-                )
-            )
         }
     }
 

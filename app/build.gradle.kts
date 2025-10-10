@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.jetbrains.kotlin.serialization)
+    alias(libs.plugins.google.services)
 }
 
 android {
@@ -63,6 +64,7 @@ dependencies {
     implementation(libs.kotlinx.serialization.core)
     implementation(libs.androidx.ui.text)
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.google.firebase.auth.ktx)
 
     val ktorVersion = "3.3.0"
     implementation(libs.ktor.client.android)
@@ -81,6 +83,15 @@ dependencies {
     implementation(libs.firebase.crashlytics.buildtools)
 
     implementation(libs.androidx.datastore.preferences)
+
+
+    implementation(libs.firebase.bom)
+
+    // Firebase Authentication
+    implementation(libs.firebase.auth)
+
+    // Firebase Coroutines
+    implementation(libs.kotlinx.coroutines.play.services)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

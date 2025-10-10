@@ -1,4 +1,5 @@
 package com.rego.navigation
+
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -48,6 +49,7 @@ fun AppNavHost() {
         composable(Destinations.Login.route) {
             MobileVerificationScreen(
                 onVerificationComplete = {
+                    // Navigate to home after successful login
                     navController.navigate(Destinations.Home.route) {
                         popUpTo(Destinations.LoginOptions.route) { inclusive = true }
                     }
@@ -61,7 +63,12 @@ fun AppNavHost() {
                     navController.popBackStack()
                 },
                 onRegistrationSuccess = { userId, firebaseUid ->
-                    val route = Destinations.Home.createRoute(userId, firebaseUid)
+                    // Navigate to home after successful signup
+                    val route = if (userId != null && firebaseUid != null) {
+                        Destinations.Home.createRoute(userId, firebaseUid)
+                    } else {
+                        Destinations.Home.route
+                    }
                     navController.navigate(route) {
                         popUpTo(Destinations.LoginOptions.route) { inclusive = true }
                     }
@@ -103,16 +110,14 @@ fun AppNavHost() {
                     navController.navigate(Destinations.OrderDetails.route)
                 },
                 onSearchClick = { },
-                onOrderListClick = {
-                    navController.navigate(Destinations.OrdersList.createRoute(it))
+                onOrderListClick = { orderType ->
+                    navController.navigate(Destinations.OrdersList.createRoute(orderType))
                 },
                 onNotificationClick = {
                     navController.navigate(Destinations.Notification.route)
                 }
             )
         }
-
-        // ... rest of the routes remain the same ...
 
         composable(Destinations.RaiseRequest.route) {
             RaiseRequestParentScreen(
@@ -162,8 +167,8 @@ fun AppNavHost() {
                     navController.popBackStack()
                 },
                 onHomeClick = {
-                    if (navController.currentDestination?.route == Destinations.Profile.route) {
-                        navController.popBackStack()
+                    navController.navigate(Destinations.Home.route) {
+                        popUpTo(Destinations.Profile.route) { inclusive = true }
                     }
                 }
             )
@@ -172,7 +177,9 @@ fun AppNavHost() {
         composable(Destinations.ResetPassword.route) {
             SetPasswordParentScreen(
                 onLoginClick = {
-                    navController.navigate(Destinations.LoginOptions.route)
+                    navController.navigate(Destinations.LoginOptions.route) {
+                        popUpTo(0) { inclusive = true }
+                    }
                 }
             )
         }

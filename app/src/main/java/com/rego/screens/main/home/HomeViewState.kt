@@ -16,14 +16,12 @@ data class HomeViewState(
     val quickFilters: List<String>? = null,
     val userName: String? = null,
     val userInitial: String = "U",
-    val leadStats: LeadStatsResponse.LeadStats? = null,
+    val leadStatsItems: List<LeadStatsResponse.LeadStatItem>? = null,
     val selectedFilter: String? = null,
     val error: String? = null,
 
-    // New properties for enhanced functionality
     val isRefreshing: Boolean = false,
     val isLoadingMore: Boolean = false,
-    val cardCounts: Map<String, Int> = emptyMap(),
     val leads: List<LeadsResponse.LeadsData.Lead> = emptyList(),
     val searchQuery: String = "",
     val isSearching: Boolean = false,
@@ -34,7 +32,6 @@ data class HomeViewState(
     val statsError: String? = null,
     val leadsError: String? = null
 ) : ViewState {
-    // Helper property for UI
     val displayOrders: List<OrderData>
         get() = when {
             searchResults != null -> searchResults

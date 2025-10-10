@@ -1,5 +1,9 @@
 package com.rego.di
 
+import com.google.firebase.auth.FirebaseAuth
+import com.rego.auth.FirebaseAuthManager
+import com.rego.screens.auth.AuthInteractor
+import com.rego.screens.auth.AuthApiImpl
 import com.rego.screens.loginoption.LoginOptionViewModel
 import com.rego.screens.main.home.HomeApi
 import com.rego.screens.main.home.HomeApiImpl
@@ -42,16 +46,21 @@ val appModule = module {
     // User Preferences
     single { UserPreferences(androidContext()) }
 
+    // Firebase Auth
+    single { FirebaseAuth.getInstance() }
+    single { FirebaseAuthManager(get()) }
+
     // Auth
     factory<com.rego.screens.auth.AuthApi> {
-        com.rego.screens.auth.AuthApiImpl(
+        AuthApiImpl(
             ktorClient = get()
         )
     }
     factory {
-        com.rego.screens.auth.AuthInteractor(
+        AuthInteractor(
             authApi = get(),
-            userPreferences = get()
+            userPreferences = get(),
+            firebaseAuthManager = get()
         )
     }
     viewModel {
@@ -100,9 +109,19 @@ val appModule = module {
     factory { NotificationInteractor(get()) }
     viewModel { NotificationViewModel(get()) }
 
-    // Order Details
-    factory<OrderDetailsApi> { OrderDetailsApiImpl() }
-    factory { OrderDetailsInteractor(get()) }
+// Order
+// Order Details - Updated to use real API
+    factory<OrderDetailsApi> {
+        OrderDetailsApiImpl(
+            ktorClient = get()
+        )
+    }
+    factory {
+        OrderDetailsInteractor(
+            api = get(),
+            userPreferences = get()
+        )
+    }
     viewModel { OrderDetailsViewModel(get()) }
 
     // Raise a Request
@@ -130,7 +149,9 @@ val appModule = module {
     viewModel {
         MobileVerificationViewModel(
             interactor = get(),
-            userPreferences = get()
+            userPreferences = get(),
+            authInteractor = get(),
+            firebaseAuthManager = get()
         )
     }
 

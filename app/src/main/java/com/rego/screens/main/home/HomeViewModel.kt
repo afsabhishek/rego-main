@@ -51,7 +51,6 @@ class HomeViewModel(
         viewModelScope.launch {
             setState { copy(progressBarState = ProgressBarState.Loading) }
 
-            // Load all data in parallel
             launch { loadUserProfile() }
             launch { loadLeadStats() }
             launch { loadOngoingLeads() }
@@ -62,11 +61,10 @@ class HomeViewModel(
         viewModelScope.launch {
             setState { copy(isRefreshing = true) }
 
-            // Reload stats and leads
             launch { loadLeadStats() }
             launch { loadOngoingLeads() }
 
-            delay(500) // Minimum refresh time for UX
+            delay(500)
             setState { copy(isRefreshing = false) }
         }
     }
@@ -85,9 +83,7 @@ class HomeViewModel(
                             }
                         }
                     }
-                    is DataState.Error -> {
-                        // Handle error silently for profile
-                    }
+                    is DataState.Error -> {}
                     else -> {}
                 }
             }
@@ -108,9 +104,9 @@ class HomeViewModel(
                         dataState.data?.let { stats ->
                             setState {
                                 copy(
-                                    summaryCards = createSummaryCards(stats),
+                                    summaryCards = createSummaryCardsFromStats(stats),
                                     quickFilters = getQuickFilters(),
-                                    leadStats = stats,
+                                    leadStatsItems = stats,
                                     progressBarState = ProgressBarState.Idle,
                                     statsError = null
                                 )
@@ -131,42 +127,22 @@ class HomeViewModel(
                     else -> {}
                 }
             }
-
-            // Also load counts for more accurate card data
-            loadLeadCounts()
-        }
-    }
-
-    private fun loadLeadCounts() {
-        viewModelScope.launch {
-            homeInteractor.getLeadCounts().collect { dataState ->
-                when (dataState) {
-                    is DataState.Data -> {
-                        dataState.data?.let { counts ->
-                            setState { copy(cardCounts = counts) }
-
-                            // Update summary cards with actual counts
-                            val stats = state.value.leadStats ?: LeadStatsResponse.LeadStats(
-                                newLeads = counts[LeadStatus.NEW.value] ?: 0,
-                                totalLeads = counts["TOTAL"] ?: 0,
-                                approved = counts[LeadStatus.APPROVED.value] ?: 0,
-                                notRepairable = counts[LeadStatus.NOT_REPAIRABLE.value] ?: 0,
-                                completed = counts[LeadStatus.COMPLETED.value] ?: 0,
-                                workInProgress = counts[LeadStatus.WORK_IN_PROGRESS.value] ?: 0
-                            )
-                            setState { copy(summaryCards = createSummaryCards(stats)) }
-                        }
-                    }
-                    else -> {}
-                }
-            }
         }
     }
 
     private fun loadOngoingLeads(status: String? = null, page: Int = 1, append: Boolean = false) {
         viewModelScope.launch {
-            // Default to WORK_IN_PROGRESS if no status specified
-            val searchStatus = status ?: LeadStatus.WORK_IN_PROGRESS.value
+            // Default to WORK_IN_PROGRESS statuses
+            val defaultStatuses = listOf(
+                "PICKUP_ALIGNED",
+                "PHYSICAL_INSPECTION_ALIGNED",
+                "PICKUP_DONE",
+                "WORK_IN_PROGRESS",
+                "READY_FOR_DELIVERY",
+                "INVOICE_GENERATED"
+            )
+
+            val searchStatus = status ?: defaultStatuses.joinToString(",")
 
             homeInteractor.getLeadsList(
                 status = searchStatus,
@@ -230,7 +206,7 @@ class HomeViewModel(
             setState { copy(isLoadingMore = true) }
             val nextPage = state.value.currentPage + 1
             loadOngoingLeads(
-                status = state.value.selectedFilter?.let { mapDisplayToApiStatus(it) },
+                status = state.value.selectedFilter?.let { getStatusesForFilter(it) },
                 page = nextPage,
                 append = true
             )
@@ -239,7 +215,6 @@ class HomeViewModel(
 
     private fun filterLeadsByStatus(status: String?) {
         if (status == null) {
-            // Show all Work in Progress orders
             setState {
                 copy(
                     ongoingOrdersFiltered = null,
@@ -249,7 +224,6 @@ class HomeViewModel(
             }
             loadOngoingLeads()
         } else {
-            // Filter by specific status
             setState {
                 copy(
                     selectedFilter = status,
@@ -257,8 +231,8 @@ class HomeViewModel(
                 )
             }
 
-            val apiStatus = mapDisplayToApiStatus(status)
-            loadOngoingLeads(apiStatus)
+            val statusString = getStatusesForFilter(status)
+            loadOngoingLeads(statusString)
         }
     }
 
@@ -273,7 +247,7 @@ class HomeViewModel(
         setState { copy(searchQuery = query, isSearching = true) }
 
         searchJob = viewModelScope.launch {
-            delay(300) // Debounce
+            delay(300)
 
             homeInteractor.searchLeads(query).collect { dataState ->
                 when (dataState) {
@@ -318,14 +292,12 @@ class HomeViewModel(
     private fun handleCardClick(cardType: String) {
         setAction { HomeAction.NavigateToOrderList(cardType) }
 
-        // Optionally load that specific status
-        when (cardType) {
-            "New Leads" -> loadOngoingLeads(LeadStatus.NEW.value)
-            "Total Leads" -> loadOngoingLeads(null)
-            "Approved" -> loadOngoingLeads(LeadStatus.APPROVED.value)
-            "Not Repairable" -> loadOngoingLeads(LeadStatus.NOT_REPAIRABLE.value)
-            "Completed" -> loadOngoingLeads(LeadStatus.COMPLETED.value)
-            "Pending" -> loadOngoingLeads(LeadStatus.WORK_IN_PROGRESS.value)
+        // Load leads for the selected card type
+        val statItem = state.value.leadStatsItems?.find { it.label == cardType }
+        if (statItem != null && statItem.status.isNotEmpty()) {
+            loadOngoingLeads(statItem.status.joinToString(","))
+        } else if (cardType == "Total Leads") {
+            loadOngoingLeads(null) // Load all leads
         }
     }
 
@@ -333,16 +305,19 @@ class HomeViewModel(
         setAction { HomeAction.NavigateToOrderDetails(orderId) }
     }
 
-    private fun createSummaryCards(stats: LeadStatsResponse.LeadStats): List<Triple<String, Int, Int>> {
-        val counts = state.value.cardCounts
-        return listOf(
-            Triple("New Leads", R.drawable.audience, counts[LeadStatus.NEW.value] ?: stats.newLeads),
-            Triple("Total Leads", R.drawable.total_leads, counts["TOTAL"] ?: stats.totalLeads),
-            Triple("Approved", R.drawable.approved, counts[LeadStatus.APPROVED.value] ?: stats.approved),
-            Triple("Not Repairable", R.drawable.not_repairable, counts[LeadStatus.NOT_REPAIRABLE.value] ?: stats.notRepairable),
-            Triple("Completed", R.drawable.completed, counts[LeadStatus.COMPLETED.value] ?: stats.completed),
-            Triple("Pending", R.drawable.pending, counts[LeadStatus.WORK_IN_PROGRESS.value] ?: stats.workInProgress)
+    private fun createSummaryCardsFromStats(stats: List<LeadStatsResponse.LeadStatItem>): List<Triple<String, Int, Int>> {
+        val iconMap = mapOf(
+            "New Leads" to R.drawable.audience,
+            "Total Leads" to R.drawable.total_leads,
+            "Approved" to R.drawable.approved,
+            "Not Repairable" to R.drawable.not_repairable,
+            "Completed" to R.drawable.completed,
+            "Work in Progress" to R.drawable.pending
         )
+
+        return stats.map { stat ->
+            Triple(stat.label, iconMap[stat.label] ?: R.drawable.total_leads, stat.count)
+        }
     }
 
     private fun getQuickFilters(): List<String> {
@@ -354,6 +329,18 @@ class HomeViewModel(
             "Invoice Generated",
             "Ready for Delivery"
         )
+    }
+
+    private fun getStatusesForFilter(filterLabel: String): String {
+        return when (filterLabel) {
+            "Work In Progress" -> "WORK_IN_PROGRESS"
+            "Pickup Aligned" -> "PICKUP_ALIGNED"
+            "Part Delivered" -> "PART_DELIVERED"
+            "Pickup Done" -> "PICKUP_DONE"
+            "Invoice Generated" -> "INVOICE_GENERATED"
+            "Ready for Delivery" -> "READY_FOR_DELIVERY"
+            else -> filterLabel.uppercase().replace(" ", "_")
+        }
     }
 
     private fun mapLeadsToOrderData(leads: List<LeadsResponse.LeadsData.Lead>): List<OrderData> {
@@ -371,37 +358,22 @@ class HomeViewModel(
 
     private fun mapStatusToDisplay(status: String): String {
         return when (status) {
-            LeadStatus.NEW.value -> "New"
-            LeadStatus.APPROVED.value -> "Approved"
-            LeadStatus.NOT_REPAIRABLE.value -> "Not Repairable"
-            LeadStatus.COMPLETED.value -> "Completed"
-            LeadStatus.WORK_IN_PROGRESS.value -> "Work In Progress"
-            LeadStatus.PICKUP_ALIGNED.value -> "Pickup Aligned"
-            LeadStatus.PART_DELIVERED.value -> "Part Delivered"
-            LeadStatus.PICKUP_DONE.value -> "Pickup Done"
-            LeadStatus.INVOICE_GENERATED.value -> "Invoice Generated"
-            LeadStatus.READY_FOR_DELIVERY.value -> "Ready for Delivery"
+            "NEW" -> "New"
+            "APPROVED" -> "Approved"
+            "REJECTED" -> "Not Repairable"
+            "DELIVERED" -> "Completed"
+            "WORK_IN_PROGRESS" -> "Work In Progress"
+            "PICKUP_ALIGNED" -> "Pickup Aligned"
+            "PART_DELIVERED" -> "Part Delivered"
+            "PICKUP_DONE" -> "Pickup Done"
+            "INVOICE_GENERATED" -> "Invoice Generated"
+            "READY_FOR_DELIVERY" -> "Ready for Delivery"
+            "PHYSICAL_INSPECTION_ALIGNED" -> "Physical Inspection Aligned"
             else -> status.replace("_", " ")
                 .split(" ")
                 .joinToString(" ") { word ->
                     word.lowercase().replaceFirstChar { it.uppercase() }
                 }
-        }
-    }
-
-    private fun mapDisplayToApiStatus(display: String): String {
-        return when (display) {
-            "New" -> LeadStatus.NEW.value
-            "Approved" -> LeadStatus.APPROVED.value
-            "Not Repairable" -> LeadStatus.NOT_REPAIRABLE.value
-            "Completed" -> LeadStatus.COMPLETED.value
-            "Work In Progress" -> LeadStatus.WORK_IN_PROGRESS.value
-            "Pickup Aligned" -> LeadStatus.PICKUP_ALIGNED.value
-            "Part Delivered" -> LeadStatus.PART_DELIVERED.value
-            "Pickup Done" -> LeadStatus.PICKUP_DONE.value
-            "Invoice Generated" -> LeadStatus.INVOICE_GENERATED.value
-            "Ready for Delivery" -> LeadStatus.READY_FOR_DELIVERY.value
-            else -> display.uppercase().replace(" ", "_")
         }
     }
 
@@ -414,22 +386,13 @@ class HomeViewModel(
             val date = inputFormat.parse(dateString)
             date?.let { outputFormat.format(it) } ?: "TBD"
         } catch (e: Exception) {
-            // Try without milliseconds
             try {
                 val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault())
                 val outputFormat = SimpleDateFormat("dd/MM/yy", Locale.getDefault())
                 val date = inputFormat.parse(dateString)
                 date?.let { outputFormat.format(it) } ?: "TBD"
             } catch (e2: Exception) {
-                // Try another common format
-                try {
-                    val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
-                    val outputFormat = SimpleDateFormat("dd/MM/yy", Locale.getDefault())
-                    val date = inputFormat.parse(dateString)
-                    date?.let { outputFormat.format(it) } ?: "TBD"
-                } catch (e3: Exception) {
-                    "TBD"
-                }
+                "TBD"
             }
         }
     }

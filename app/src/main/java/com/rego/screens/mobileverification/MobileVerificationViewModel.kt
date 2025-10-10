@@ -1,17 +1,23 @@
 package com.rego.screens.mobileverification
 
 import androidx.lifecycle.viewModelScope
+import com.rego.auth.FirebaseAuthManager
+import com.rego.screens.auth.AuthInteractor
+import com.rego.screens.auth.FirebaseAuthResult
 import com.rego.screens.base.ProgressBarState
 import com.rego.screens.base.UIComponent
 import com.rego.screens.base.BaseViewModel
 import com.rego.screens.base.DataState
+import com.rego.screens.base.UIComponent.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import com.rego.util.UserPreferences
 
 class MobileVerificationViewModel(
     private val interactor: MobileVerificationInteractor,
-    private val userPreferences: UserPreferences
+    private val userPreferences: UserPreferences,
+    private val authInteractor: AuthInteractor,
+    private val firebaseAuthManager: FirebaseAuthManager
 ) : BaseViewModel<MobileVerificationEvent, MobileVerificationViewState, MobileVerificationAction>() {
 
     override fun setInitialState() = MobileVerificationViewState()
@@ -108,36 +114,33 @@ class MobileVerificationViewModel(
 
                     is DataState.Data -> {
                         dataState.data?.let { verifyData ->
-                            // Save auth token and user info to preferences
-                            userPreferences.saveAuthToken(verifyData.authentication.authToken)
+                            // Save backend tokens
+                            userPreferences.saveAuthToken(
+                                verifyData.authentication.authToken,
+                                verifyData.authentication.expiresIn
+                            )
                             verifyData.authentication.refreshToken?.let {
                                 userPreferences.saveRefreshToken(it)
                             }
+
+                            // Save user info
                             userPreferences.saveUserInfo(
                                 userId = verifyData.user.id,
-                                userName = verifyData.user.name
+                                userName = verifyData.user.name,
+                                email = verifyData.user.email,
+                                phone = verifyData.user.phoneNumber
                             )
 
-                            setState {
-                                copy(
-                                    isOtpVerified = true,
-                                    authToken = verifyData.authentication.authToken,
-                                    refreshToken = verifyData.authentication.refreshToken,
-                                    tokenExpiresIn = verifyData.authentication.expiresIn,
-                                    tokenType = verifyData.authentication.tokenType,
-                                    userId = verifyData.user.id,
-                                    userName = verifyData.user.name,
-                                    userEmail = verifyData.user.email,
-                                    userCity = verifyData.user.city,
-                                    userState = verifyData.user.state,
-                                    userInsuranceCompany = verifyData.user.insuranceCompany,
-                                    userRole = verifyData.user.role,
-                                    backendMessage = verifyData.message
-                                )
-                            }
+                            // Check if we need to authenticate with Firebase
+                            // Assuming backend returns Firebase custom token in response
+                            val firebaseCustomToken = verifyData.firebaseCustomToken
 
-                            delay(500)
-                            setAction { MobileVerificationAction.NavigateToHome }
+                            if (firebaseCustomToken != null) {
+                                authenticateWithFirebase(firebaseCustomToken, verifyData)
+                            } else {
+                                // No Firebase token, proceed without Firebase auth
+                                completeAuthentication(verifyData, null)
+                            }
                         }
                     }
 
@@ -150,6 +153,60 @@ class MobileVerificationViewModel(
                     }
                 }
             }
+        }
+    }
+
+    private fun authenticateWithFirebase(
+        customToken: String,
+        verifyData: com.rego.screens.mobileverification.data.VerifyOtpResponse.LoginData
+    ) {
+        viewModelScope.launch {
+            authInteractor.authenticateWithFirebase(customToken).collect { result ->
+                when (result) {
+                    is FirebaseAuthResult.Success -> {
+                        completeAuthentication(verifyData, result.idToken)
+                    }
+                    is FirebaseAuthResult.Error -> {
+                        // Firebase auth failed, but we can still proceed with backend token
+                        setError {
+                            Snackbar(
+                                message = "Firebase authentication failed: ${result.message}",
+                                buttonText = "OK"
+                            )
+                        }
+                        completeAuthentication(verifyData, null)
+                    }
+                }
+            }
+        }
+    }
+
+    private fun completeAuthentication(
+        verifyData: com.rego.screens.mobileverification.data.VerifyOtpResponse.LoginData,
+        firebaseIdToken: String?
+    ) {
+        viewModelScope.launch {
+            setState {
+                copy(
+                    isOtpVerified = true,
+                    authToken = verifyData.authentication.authToken,
+                    refreshToken = verifyData.authentication.refreshToken,
+                    tokenExpiresIn = verifyData.authentication.expiresIn,
+                    tokenType = verifyData.authentication.tokenType,
+                    userId = verifyData.user.id,
+                    userName = verifyData.user.name,
+                    userEmail = verifyData.user.email,
+                    userCity = verifyData.user.city,
+                    userState = verifyData.user.state,
+                    userInsuranceCompany = verifyData.user.insuranceCompany,
+                    userRole = verifyData.user.role,
+                    firebaseIdToken = firebaseIdToken,
+                    backendMessage = verifyData.message
+                )
+            }
+
+            delay(500)
+            setAction { MobileVerificationAction.NavigateToHome }
         }
     }
 

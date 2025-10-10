@@ -7,12 +7,6 @@ import com.rego.screens.base.ProgressBarState
 import com.rego.screens.base.UIComponent
 import com.rego.screens.joinus.data.InsuranceCompany
 import com.rego.screens.joinus.data.JoinUsRequest
-import com.rego.screens.mobileverification.MobileVerificationAction
-import com.rego.screens.mobileverification.MobileVerificationEvent
-import com.rego.screens.mobileverification.MobileVerificationViewState
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -137,6 +131,7 @@ class JoinUsViewModel(
                             )
                         }
                         dataState.data?.let { data ->
+                            // Navigate to home after successful registration
                             setAction { JoinUsAction.RegistrationSuccess(data) }
                         }
                     }

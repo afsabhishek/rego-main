@@ -3,6 +3,7 @@ package com.rego.screens.mobileverification
 import androidx.compose.runtime.Immutable
 import com.rego.screens.base.ProgressBarState
 import com.rego.screens.base.ViewState
+
 @Immutable
 data class MobileVerificationViewState(
     val progressBarState: ProgressBarState = ProgressBarState.Idle,
@@ -31,8 +32,11 @@ data class MobileVerificationViewState(
     val userInsuranceCompany: String? = null,
     val userRole: String? = null,
 
+    // Firebase Authentication
+    val firebaseIdToken: String? = null,
+    val firebaseUid: String? = null,
+
     // UI states
     val errorMessage: String? = null,
     val resendCount: Int = 0
 ) : ViewState
-

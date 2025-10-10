@@ -5,26 +5,19 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class LeadStatsResponse(
+
     @SerialName("success")
     val success: Boolean,
     @SerialName("data")
-    val data: LeadStats? = null,
-    @SerialName("message")
-    val message: String? = null
+    val data: List<LeadStatItem>?
 ) {
     @Serializable
-    data class LeadStats(
-        @SerialName("newLeads")
-        val newLeads: Int,
-        @SerialName("totalLeads")
-        val totalLeads: Int,
-        @SerialName("approved")
-        val approved: Int,
-        @SerialName("notRepairable")
-        val notRepairable: Int,
-        @SerialName("completed")
-        val completed: Int,
-        @SerialName("workInProgress")
-        val workInProgress: Int
+    data class LeadStatItem(
+        @SerialName("label")
+        val label: String,
+        @SerialName("count")
+        val count: Int,
+        @SerialName("status")
+        val status: List<String>
     )
 }

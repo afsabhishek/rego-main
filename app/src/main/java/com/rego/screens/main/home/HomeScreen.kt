@@ -48,10 +48,12 @@ import com.rego.screens.base.DefaultScreenUI
 import com.rego.screens.base.ProgressBarState
 import com.rego.screens.components.OrderCard
 import com.rego.ui.theme.Color00954D
+import com.rego.ui.theme.Color1A1A1A
 import com.rego.ui.theme.Color1A1A1A_16
 import com.rego.ui.theme.Color1A1A1A_40
 import com.rego.ui.theme.Color1A1A1A_60
 import com.rego.ui.theme.Color1A1A1A_90
+import com.rego.ui.theme.ColorFBFBFB
 import com.rego.ui.theme.fontLightPoppins
 import com.rego.ui.theme.fontMediumPoppins
 import com.rego.ui.theme.fontSemiBoldPoppins
@@ -133,8 +135,8 @@ fun HomeScreenContent(
 ) {
     var expandedCard by remember { mutableStateOf<String?>(null) }
 
-    // Use filtered orders if available, otherwise use all orders
-    val displayOrders = state.ongoingOrdersFiltered ?: state.ongoingOrdersAll ?: emptyList()
+    // Use the computed property from HomeViewState
+    val displayOrders = state.displayOrders
 
     Box(
         modifier = Modifier
@@ -441,7 +443,7 @@ fun HomeScreenContent(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = "No orders found",
+                                text = if (state.isSearching) "Searching..." else "No orders found",
                                 style = fontMediumPoppins().copy(fontSize = 14.sp),
                                 color = Color1A1A1A_60()
                             )

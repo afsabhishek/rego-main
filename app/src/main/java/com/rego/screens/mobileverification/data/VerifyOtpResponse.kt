@@ -17,6 +17,8 @@ data class VerifyOtpResponse(
         @SerialName("user")
         val user: User,
         @SerialName("authentication")
-        val authentication: Authentication
+        val authentication: Authentication,
+        @SerialName("firebaseCustomToken")
+        val firebaseCustomToken: String? = null // Firebase custom token from backend
     )
 }

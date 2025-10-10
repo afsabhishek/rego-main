@@ -4,7 +4,8 @@ import com.rego.screens.base.ViewEvent
 
 sealed class OrderDetailsEvent : ViewEvent {
     object Init : OrderDetailsEvent()
-    data class LoadOrders(val partTypeIndex: Int) : OrderDetailsEvent()
-    data class SelectOrder(val orderId: String) : OrderDetailsEvent()
-    data class LoadOrderDetails(val orderId: String) : OrderDetailsEvent()
+    data class LoadLeadDetails(val leadId: String) : OrderDetailsEvent()
+    data class LoadLeadsByStatus(val status: String?, val page: Int = 1) : OrderDetailsEvent()
+    object RetryLoadDetails : OrderDetailsEvent()
+    object LoadMoreLeads : OrderDetailsEvent()
 }

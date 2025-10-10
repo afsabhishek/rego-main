@@ -2,6 +2,7 @@ package com.rego.network
 
 import com.rego.util.UserPreferences
 import io.ktor.client.*
+import io.ktor.client.call.body
 import io.ktor.client.engine.android.*
 import io.ktor.client.plugins.*
 import io.ktor.client.plugins.auth.Auth
@@ -16,19 +17,21 @@ import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
 
 object NetworkConfig {
-    const val BASE_URL = "https://rego-backend-staging-s3yjdx63fa-uc.a.run.app/api" // Replace with your actual domain
+    const val BASE_URL = "https://rego-backend-staging-s3yjdx63fa-uc.a.run.app/api"
 }
 
 object ApiRoutes {
     const val AUTH_LOGIN = "/auth/login"
     const val AUTH_VERIFY_OTP = "/auth/verify-login-otp"
     const val AUTH_RESEND_OTP = "/auth/resend-otp"
+    const val AUTH_REFRESH_TOKEN = "/auth/refresh-token"
     const val INSURANCE_COMPANIES = "/insurance-companies"
     const val JOIN_US_REGISTER = "/auth/signup"
     const val USER_PROFILE = "/user/profile"
     const val GET_LEADS_STATS = "/leads/stats"
     const val GET_LEADS = "/leads"
 }
+
 class KtorClient(
     private val userPreferences: UserPreferences? = null
 ) {
@@ -62,16 +65,37 @@ class KtorClient(
                         val refreshToken = userPreferences.getRefreshToken()
                         if (refreshToken != null) {
                             try {
-                                // Make refresh token API call here
-                                // This is simplified - you'd need to inject AuthApi properly
-                                val newAccessToken = userPreferences.getAuthToken()
-                                val newRefreshToken = userPreferences.getRefreshToken()
-                                if (newAccessToken != null && newRefreshToken != null) {
-                                    BearerTokens(newAccessToken, newRefreshToken)
+                                // Make refresh token API call
+                                val response: io.ktor.client.statement.HttpResponse = client.post {
+                                    url("${NetworkConfig.BASE_URL}${ApiRoutes.AUTH_REFRESH_TOKEN}")
+                                    contentType(ContentType.Application.Json)
+                                    setBody(mapOf("refreshToken" to refreshToken))
+                                }
+
+                                if (response.status == HttpStatusCode.OK) {
+                                    val tokenResponse: com.rego.screens.auth.RefreshTokenResponse =
+                                        response.body()
+
+                                    if (tokenResponse.success && tokenResponse.data != null) {
+                                        // Save new tokens
+                                        userPreferences.saveAuthToken(
+                                            tokenResponse.data.authToken,
+                                            tokenResponse.data.expiresIn
+                                        )
+                                        userPreferences.saveRefreshToken(tokenResponse.data.refreshToken)
+
+                                        BearerTokens(
+                                            tokenResponse.data.authToken,
+                                            tokenResponse.data.refreshToken
+                                        )
+                                    } else {
+                                        null
+                                    }
                                 } else {
                                     null
                                 }
                             } catch (e: Exception) {
+                                e.printStackTrace()
                                 null
                             }
                         } else {
@@ -81,11 +105,12 @@ class KtorClient(
 
                     sendWithoutRequest { request ->
                         // Don't add auth header for login/signup endpoints
-                        request.url.pathSegments.any {
+                        !request.url.pathSegments.any {
                             it.contains("login") ||
                                     it.contains("signup") ||
                                     it.contains("verify-otp") ||
-                                    it.contains("resend-otp")
+                                    it.contains("resend-otp") ||
+                                    it.contains("refresh-token")
                         }
                     }
                 }
@@ -128,5 +153,26 @@ class KtorClient(
             connectTimeout = 30_000
             socketTimeout = 30_000
         }
+    }
+}
+
+// Extension function to add Firebase ID token header
+suspend fun HttpRequestBuilder.addFirebaseIdToken(userPreferences: UserPreferences) {
+    val firebaseToken = userPreferences.getFirebaseIdToken()
+    if (!firebaseToken.isNullOrEmpty()) {
+        header("X-Firebase-Token", firebaseToken)
+    }
+}
+
+// Extension function to add both backend and Firebase tokens
+suspend fun HttpRequestBuilder.addAllAuthHeaders(userPreferences: UserPreferences) {
+    val backendToken = userPreferences.getAuthToken()
+    if (!backendToken.isNullOrEmpty()) {
+        header(HttpHeaders.Authorization, "Bearer $backendToken")
+    }
+
+    val firebaseToken = userPreferences.getFirebaseIdToken()
+    if (!firebaseToken.isNullOrEmpty()) {
+        header("X-Firebase-Token", firebaseToken)
     }
 }

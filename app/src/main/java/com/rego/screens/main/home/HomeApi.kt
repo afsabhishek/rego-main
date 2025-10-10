@@ -15,10 +15,6 @@ interface HomeApi {
         limit: Int = 20
     ): LeadsResponse
 
-    // Get counts for each status (for cards)
-    suspend fun getLeadCounts(authToken: String): Map<String, Int>
-
-    // Search leads
     suspend fun searchLeads(
         authToken: String,
         query: String,

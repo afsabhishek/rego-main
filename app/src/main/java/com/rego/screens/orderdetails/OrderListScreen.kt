@@ -18,10 +18,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
@@ -35,11 +35,10 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -50,6 +49,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.rego.R
 import com.rego.screens.components.OrderCard
+import com.rego.screens.components.OrderData
+import com.rego.screens.main.home.data.LeadStatus
+import com.rego.screens.main.home.data.LeadsResponse
 import com.rego.ui.theme.Color00954D
 import com.rego.ui.theme.Color1A1A1A_40
 import com.rego.ui.theme.NativeAndroidBaseArchitectureTheme
@@ -58,18 +60,21 @@ import com.rego.ui.theme.fontMediumPoppins
 import com.rego.ui.theme.fontSemiBoldPoppins
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
+import java.text.SimpleDateFormat
+import java.util.Locale
 
-data class PartType(
+data class PartTypeTab(
     val name: String,
-    val iconRes: Int
+    val iconRes: Int,
+    val status: String
 )
 
-// Part types with correct icons
-val partTypes = listOf(
-    PartType("Alloy wheels", R.drawable.alloy_wheel),
-    PartType("Headlamps", R.drawable.car_light),
-    PartType("Plastic repair", R.drawable.car_bumper),
-    PartType("Leather & fabric repair", R.drawable.car_seat)
+// Map tabs to actual lead statuses from the API
+val partTypeTabs = listOf(
+    PartTypeTab("Work In Progress", R.drawable.alloy_wheel, LeadStatus.WORK_IN_PROGRESS.value),
+    PartTypeTab("Pickup Aligned", R.drawable.car_light, LeadStatus.PICKUP_ALIGNED.value),
+    PartTypeTab("Part Delivered", R.drawable.car_bumper, LeadStatus.PART_DELIVERED.value),
+    PartTypeTab("Ready for Delivery", R.drawable.car_seat, LeadStatus.READY_FOR_DELIVERY.value)
 )
 
 @SuppressLint("DefaultLocale")
@@ -83,13 +88,39 @@ fun OrderListScreen(
     val coroutineScope = rememberCoroutineScope()
     val viewModel: OrderDetailsViewModel = koinViewModel()
     val state by viewModel.state.collectAsState()
-    val pagerState = rememberPagerState(pageCount = { partTypes.size })
+
+    val listState = rememberLazyListState()
+    val currentTab = remember { androidx.compose.runtime.mutableStateOf(0) }
 
     LaunchedEffect(Unit) {
-        viewModel.setEvent(OrderDetailsEvent.Init)
+        // Load first tab data on init
+        viewModel.setEvent(
+            OrderDetailsEvent.LoadLeadsByStatus(
+                status = partTypeTabs[0].status,
+                page = 1
+            )
+        )
     }
 
-    var expandedCard by remember { mutableStateOf<String?>(null) }
+    // Detect when user scrolls to bottom for pagination
+    val isAtBottom by remember {
+        derivedStateOf {
+            val layoutInfo = listState.layoutInfo
+            val visibleItemsInfo = layoutInfo.visibleItemsInfo
+            if (layoutInfo.totalItemsCount == 0) {
+                false
+            } else {
+                val lastVisibleItem = visibleItemsInfo.lastOrNull()
+                lastVisibleItem?.index == layoutInfo.totalItemsCount - 1
+            }
+        }
+    }
+
+    LaunchedEffect(isAtBottom) {
+        if (isAtBottom && state.hasMorePages && !state.isLoadingMore) {
+            viewModel.setEvent(OrderDetailsEvent.LoadMoreLeads)
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -133,13 +164,13 @@ fun OrderListScreen(
             ) {
                 TabRow(
                     modifier = Modifier.padding(horizontal = 12.dp),
-                    selectedTabIndex = pagerState.currentPage,
+                    selectedTabIndex = currentTab.value,
                     containerColor = Color.Transparent,
                     contentColor = Color.White,
                     indicator = { tabPositions ->
                         TabRowDefaults.Indicator(
                             modifier = Modifier
-                                .tabIndicatorOffset(tabPositions[pagerState.currentPage])
+                                .tabIndicatorOffset(tabPositions[currentTab.value])
                                 .background(
                                     color = Color.White,
                                     shape = RoundedCornerShape(topEnd = 12.dp, topStart = 12.dp)
@@ -149,13 +180,18 @@ fun OrderListScreen(
                         )
                     }
                 ) {
-                    partTypes.forEachIndexed { index, partType ->
+                    partTypeTabs.forEachIndexed { index, partType ->
                         Tab(
-                            selected = pagerState.currentPage == index,
+                            selected = currentTab.value == index,
                             onClick = {
+                                currentTab.value = index
                                 coroutineScope.launch {
-                                    pagerState.animateScrollToPage(index)
-                                    viewModel.setEvent(OrderDetailsEvent.LoadOrders(index))
+                                    viewModel.setEvent(
+                                        OrderDetailsEvent.LoadLeadsByStatus(
+                                            status = partType.status,
+                                            page = 1
+                                        )
+                                    )
                                 }
                             },
                             modifier = Modifier.padding(vertical = 16.dp)
@@ -166,7 +202,7 @@ fun OrderListScreen(
                             ) {
                                 Box(
                                     modifier = Modifier.background(
-                                        color = if (pagerState.currentPage == index) Color.White else Color.White.copy(
+                                        color = if (currentTab.value == index) Color.White else Color.White.copy(
                                             alpha = 0.13f
                                         ), shape = CircleShape
                                     )
@@ -177,14 +213,14 @@ fun OrderListScreen(
                                         modifier = Modifier
                                             .padding(6.dp)
                                             .size(28.dp),
-                                        tint = if (pagerState.currentPage == index) Color00954D else Color.White
+                                        tint = if (currentTab.value == index) Color00954D else Color.White
                                     )
                                 }
                                 Spacer(modifier = Modifier.height(10.dp))
                                 Text(
                                     modifier = Modifier.height(26.dp),
                                     text = partType.name,
-                                    style = if (pagerState.currentPage == index) fontBoldPoppins().copy(
+                                    style = if (currentTab.value == index) fontBoldPoppins().copy(
                                         color = Color.White
                                     ) else fontSemiBoldPoppins().copy(color = Color.White.copy(alpha = 0.8f)),
                                     textAlign = TextAlign.Center,
@@ -271,55 +307,168 @@ fun OrderListScreen(
                 }
             }
 
-            // Horizontal Pager with order lists
-            HorizontalPager(
-                state = pagerState,
-                modifier = Modifier.fillMaxSize()
-            ) { page ->
-                val ordersForPage = state.orderListByType?.get(page) ?: emptyList()
-
-                Column(
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    // Total count
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 4.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Total",
-                            style = fontMediumPoppins().copy(fontSize = 14.sp),
-                            color = Color1A1A1A_40()
-                        )
-                        Text(
-                            text = String.format("%02d", ordersForPage.size),
-                            style = fontSemiBoldPoppins().copy(fontSize = 14.sp),
-                            color = Color.Black.copy(alpha = 0.87f)
-                        )
-                    }
-
-                    // Order list using reusable OrderCard
-                    LazyColumn(
+            // Content based on state
+            when {
+                state.progressBarState == com.rego.screens.base.ProgressBarState.Loading && state.leads.isEmpty() -> {
+                    Box(
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                        contentAlignment = Alignment.Center
                     ) {
-                        items(ordersForPage) { order ->
-                            OrderCard(
-                                order = order,
-                                orderType = orderType,
-                                isExpanded = true,
-                                onToggleExpanded = {},
-                                onCardClick = { onOrderClick(order.orderId) },
-                                fromOrderListing = true
+                        CircularProgressIndicator()
+                    }
+                }
+                state.error != null && state.leads.isEmpty() -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = state.error ?: "Failed to load orders",
+                                color = Color.Gray
                             )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            androidx.compose.material3.TextButton(
+                                onClick = {
+                                    viewModel.setEvent(
+                                        OrderDetailsEvent.LoadLeadsByStatus(
+                                            status = partTypeTabs[currentTab.value].status,
+                                            page = 1
+                                        )
+                                    )
+                                }
+                            ) {
+                                Text("Retry")
+                            }
+                        }
+                    }
+                }
+                else -> {
+                    OrderListContent(
+                        leads = state.leads,
+                        isLoadingMore = state.isLoadingMore,
+                        onOrderClick = onOrderClick,
+                        listState = listState
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun OrderListContent(
+    leads: List<LeadsResponse.LeadsData.Lead>,
+    isLoadingMore: Boolean,
+    onOrderClick: (String) -> Unit,
+    listState: androidx.compose.foundation.lazy.LazyListState
+) {
+    Column(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        // Total count
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Total",
+                style = fontMediumPoppins().copy(fontSize = 14.sp),
+                color = Color1A1A1A_40()
+            )
+            Text(
+                text = String.format("%02d", leads.size),
+                style = fontSemiBoldPoppins().copy(fontSize = 14.sp),
+                color = Color.Black.copy(alpha = 0.87f)
+            )
+        }
+
+        if (leads.isEmpty()) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "No orders found",
+                    color = Color.Gray,
+                    style = fontMediumPoppins().copy(fontSize = 14.sp)
+                )
+            }
+        } else {
+            // Order list
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(leads) { lead ->
+                    OrderCard(
+                        order = mapLeadToOrderData(lead),
+                        orderType = formatStatus(lead.status),
+                        isExpanded = true,
+                        onToggleExpanded = {},
+                        onCardClick = { onOrderClick(lead.leadId) },
+                        fromOrderListing = true
+                    )
+                }
+
+                if (isLoadingMore) {
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(modifier = Modifier.size(24.dp))
                         }
                     }
                 }
             }
+        }
+    }
+}
+
+// Helper function to map Lead to OrderData
+fun mapLeadToOrderData(lead: LeadsResponse.LeadsData.Lead): OrderData {
+    return OrderData(
+        orderId = lead.leadId,
+        status = formatStatus(lead.status),
+        carMake = "${lead.vehicle.make} ${lead.vehicle.model}, ${lead.makeYear}",
+        deliveryDate = formatDate(lead.activity.lastUpdatedAt),
+        dealerName = lead.dealer.name,
+        dealerLocation = lead.dealer.location
+    )
+}
+
+fun formatStatus(status: String): String {
+    return status.replace("_", " ")
+        .split(" ")
+        .joinToString(" ") { word ->
+            word.lowercase().replaceFirstChar { it.uppercase() }
+        }
+}
+
+fun formatDate(dateString: String?): String {
+    if (dateString == null) return "TBD"
+
+    return try {
+        val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault())
+        val outputFormat = SimpleDateFormat("dd/MM/yy", Locale.getDefault())
+        val date = inputFormat.parse(dateString)
+        date?.let { outputFormat.format(it) } ?: "TBD"
+    } catch (e: Exception) {
+        try {
+            val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault())
+            val outputFormat = SimpleDateFormat("dd/MM/yy", Locale.getDefault())
+            val date = inputFormat.parse(dateString)
+            date?.let { outputFormat.format(it) } ?: "TBD"
+        } catch (e2: Exception) {
+            "TBD"
         }
     }
 }
