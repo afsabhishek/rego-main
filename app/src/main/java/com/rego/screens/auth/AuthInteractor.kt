@@ -13,7 +13,7 @@ class AuthInteractor(
     private val firebaseAuthManager: FirebaseAuthManager
 ) {
 
-    suspend fun refreshTokenIfNeeded(): Flow<AuthResult> = flow {
+    fun refreshTokenIfNeeded(): Flow<AuthResult> = flow {
         try {
             // Get current tokens
             val currentAuthToken = userPreferences.getAuthToken()
