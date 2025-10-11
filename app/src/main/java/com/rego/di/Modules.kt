@@ -102,7 +102,7 @@ val appModule = module {
             userPreferences = get()
         )
     }
-    viewModel { ProfileViewModel(get()) }
+    viewModel { ProfileViewModel(get(), userPreferences = get()) }
 
     // Notifications
     factory<NotificationApi> { NotificationApiImpl() }

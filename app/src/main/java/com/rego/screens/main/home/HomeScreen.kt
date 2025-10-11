@@ -26,6 +26,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -547,26 +548,44 @@ fun BottomNavBar(
     onHomeClick: () -> Unit,
     onProfileClick: () -> Unit
 ) {
-    NavigationBar(modifier = modifier) {
+    NavigationBar(
+        modifier = modifier,
+        containerColor = Color.White,
+        tonalElevation = 8.dp
+    ) {
         NavigationBarItem(
             selected = isHomeSelected,
             onClick = {
-                if (isProfileSelected) {
+                if (!isHomeSelected) {
                     onHomeClick()
                 }
             },
             icon = {
                 Icon(
                     painter = painterResource(R.drawable.home),
-                    contentDescription = "Home"
+                    contentDescription = "Home",
+                    tint = if (isHomeSelected) Color00954D else Color.Gray
                 )
             },
-            label = { Text("Home") }
+            label = {
+                Text(
+                    text = "Home",
+                    color = if (isHomeSelected) Color00954D else Color.Gray,
+                    style = fontMediumPoppins().copy(fontSize = 12.sp)
+                )
+            },
+            colors = NavigationBarItemDefaults.colors(
+                selectedIconColor = Color00954D,
+                selectedTextColor = Color00954D,
+                indicatorColor = Color.Transparent,
+                unselectedIconColor = Color.Gray,
+                unselectedTextColor = Color.Gray
+            )
         )
         NavigationBarItem(
             selected = isProfileSelected,
             onClick = {
-                if (isHomeSelected) {
+                if (!isProfileSelected) {
                     onProfileClick()
                 }
             },
@@ -574,9 +593,23 @@ fun BottomNavBar(
                 Icon(
                     painter = painterResource(R.drawable.person),
                     contentDescription = "Profile",
+                    tint = if (isProfileSelected) Color00954D else Color.Gray
                 )
             },
-            label = { Text("Profile") }
+            label = {
+                Text(
+                    text = "Profile",
+                    color = if (isProfileSelected) Color00954D else Color.Gray,
+                    style = fontMediumPoppins().copy(fontSize = 12.sp)
+                )
+            },
+            colors = NavigationBarItemDefaults.colors(
+                selectedIconColor = Color00954D,
+                selectedTextColor = Color00954D,
+                indicatorColor = Color.Transparent,
+                unselectedIconColor = Color.Gray,
+                unselectedTextColor = Color.Gray
+            )
         )
     }
 }

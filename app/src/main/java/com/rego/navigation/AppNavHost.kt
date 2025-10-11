@@ -1,6 +1,9 @@
 package com.rego.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -9,7 +12,9 @@ import androidx.navigation.navArgument
 import com.rego.screens.joinus.JoinUsParentScreen
 import com.rego.screens.loginoption.LoginOptionScreen
 import com.rego.screens.main.home.HomeScreen
+import com.rego.screens.main.profile.ProfileAction
 import com.rego.screens.main.profile.ProfileScreen
+import com.rego.screens.main.profile.ProfileViewModel
 import com.rego.screens.mobileverification.MobileVerificationScreen
 import com.rego.screens.notifications.NotificationScreen
 import com.rego.screens.orderdetails.OrderDetailsScreen
@@ -17,6 +22,7 @@ import com.rego.screens.orderdetails.OrderListScreen
 import com.rego.screens.raiserequest.RaiseRequestParentScreen
 import com.rego.screens.setpassword.SetPasswordParentScreen
 import com.rego.screens.splash.SplashScreen
+import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun AppNavHost() {
@@ -159,6 +165,42 @@ fun AppNavHost() {
         }
 
         composable(Destinations.Profile.route) {
+            ProfileScreen(
+                onChangePasswordClick = {
+                    navController.navigate(Destinations.ResetPassword.route)
+                },
+                onBackClick = {
+                    navController.popBackStack()
+                },
+                onHomeClick = {
+                    // Navigate back to home, clearing the profile from backstack
+                    navController.navigate(Destinations.Home.route) {
+                        popUpTo(Destinations.Profile.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        composable(Destinations.Profile.route) { backStackEntry ->
+            val viewModel: ProfileViewModel = koinViewModel()
+            val state by viewModel.state.collectAsState()
+
+            // Handle logout navigation
+            LaunchedEffect(Unit) {
+                viewModel.action.collect { action ->
+                    when (action) {
+                        is ProfileAction.NavigateToLogin -> {
+                            navController.navigate(Destinations.LoginOptions.route) {
+                                popUpTo(0) { inclusive = true }
+                            }
+                        }
+                        is ProfileAction.ShowError -> {
+                            // Error is handled through snackbar/dialog
+                        }
+                    }
+                }
+            }
+
             ProfileScreen(
                 onChangePasswordClick = {
                     navController.navigate(Destinations.ResetPassword.route)
