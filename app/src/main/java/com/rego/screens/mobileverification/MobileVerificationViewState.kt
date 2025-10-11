@@ -38,5 +38,8 @@ data class MobileVerificationViewState(
 
     // UI states
     val errorMessage: String? = null,
-    val resendCount: Int = 0
+    val resendCount: Int = 0,
+
+    // bottom loader on Get OTP
+    val isOtpLoading: Boolean = false
 ) : ViewState

@@ -1,3 +1,4 @@
+// app/src/main/java/com/rego/screens/raiserequest/RaiseRequestParentScreen.kt
 package com.rego.screens.raiserequest
 
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -15,6 +16,9 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -25,10 +29,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.rego.R
 import com.rego.screens.base.DefaultScreenUI
+import com.rego.screens.base.EffectHandler
 import com.rego.ui.theme.Color1A1A1A_90
 import com.rego.ui.theme.NativeAndroidBaseArchitectureTheme
 import com.rego.ui.theme.fontSemiBoldMontserrat
 import kotlinx.coroutines.launch
+import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -37,15 +43,35 @@ fun RaiseRequestParentScreen(
 ) {
     val pagerState = rememberPagerState(pageCount = { 2 })
     val coroutineScope = rememberCoroutineScope()
+    val viewModel: RaiseRequestViewModel = koinViewModel()
+    val state by viewModel.state.collectAsState()
 
-    fun onSubmitNavigateToConfirmation() {
-        coroutineScope.launch {
-            pagerState.animateScrollToPage(1)
+    // Initialize the form data on first load
+    LaunchedEffect(Unit) {
+        viewModel.setEvent(RaiseRequestEvent.Init)
+    }
+
+    // Handle navigation actions from ViewModel
+    EffectHandler(effectFlow = viewModel.action) { action ->
+        when (action) {
+            is RaiseRequestAction.NavigateToSuccess -> {
+                coroutineScope.launch {
+                    pagerState.animateScrollToPage(1)
+                }
+            }
+            is RaiseRequestAction.ShowError -> {
+                // Error handling is done through the error flow
+            }
         }
     }
 
-    DefaultScreenUI { paddingValues ->
+    DefaultScreenUI(
+        progressBarState = state.progressBarState,
+        errors = viewModel.errors
+    ) { paddingValues ->
         Spacer(modifier = Modifier.size(paddingValues.calculateTopPadding()))
+
+        // Header with back button and title
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -64,32 +90,66 @@ fun RaiseRequestParentScreen(
                 tint = Color1A1A1A_90(),
                 modifier = Modifier
                     .size(22.dp)
-                    .clickable { onBack() }
+                    .clickable {
+                        if (pagerState.currentPage == 1) {
+                            // If on success page, go back to form
+                            coroutineScope.launch {
+                                pagerState.animateScrollToPage(0)
+                            }
+                        } else {
+                            // If on form page, exit the screen
+                            onBack()
+                        }
+                    }
             )
             Spacer(modifier = Modifier.width(10.dp))
             Text(
-                text = "Raise a Request",
+                text = if (pagerState.currentPage == 0) "Raise a Request" else "Request Status",
                 style = fontSemiBoldMontserrat().copy(fontSize = 16.sp),
                 color = Color1A1A1A_90(),
             )
         }
+
         HorizontalPager(
             state = pagerState,
-            modifier = Modifier
-                .fillMaxSize(),
+            modifier = Modifier.fillMaxSize(),
             userScrollEnabled = false // Disable manual scrolling
         ) { page ->
             when (page) {
                 0 -> {
-                    // Remove topBar from RaiseRequestScreen since parent has it
-                    RaiseRequestScreen(
-                        onSubmit = { onSubmitNavigateToConfirmation() }
+                    // Main form screen
+                    RaiseRequestScreenContent(
+                        state = state,
+                        onFieldChange = { field, value ->
+                            viewModel.setEvent(RaiseRequestEvent.FieldChanged(field, value))
+                        },
+                        onPartTypeSelect = { partType ->
+                            viewModel.setEvent(RaiseRequestEvent.SelectPartType(partType))
+                        },
+                        onVehicleVariantSelect = { variant ->
+                            viewModel.setEvent(RaiseRequestEvent.SelectVehicleVariant(variant))
+                        },
+                        onWorkshopDealerSelect = { dealer ->
+                            viewModel.setEvent(RaiseRequestEvent.SelectWorkshopDealer(dealer))
+                        },
+                        onSubmit = {
+                            viewModel.setEvent(RaiseRequestEvent.SubmitRequest)
+                        }
                     )
                 }
 
                 1 -> {
+                    // Success screen with lead details
                     RequestSubmittedScreen(
+                        leadId = state.submitResult?.leadId,
+                        status = state.submitResult?.status,
+                        createdAt = state.submitResult?.createdAt,
                         onOkayClick = {
+                            onBack() // Navigate back to home or previous screen
+                        },
+                        onViewDetailsClick = {
+                            // Optional: Navigate to order details screen
+                            // You can pass the leadId to navigate to order details
                             onBack()
                         }
                     )

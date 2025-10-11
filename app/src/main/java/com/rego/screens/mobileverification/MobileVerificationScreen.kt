@@ -155,10 +155,9 @@ fun MobileVerificationScreen(
                                 )
                             },
                             onGetOtpClick = {
-                                // TRIGGER GET OTP
                                 viewModel.setEvent(MobileVerificationEvent.GetOtp)
                             },
-                            isLoading = state.progressBarState == ProgressBarState.Loading,
+                            isLoading = state.isOtpLoading,
                             errorMessage = state.errorMessage
                         )
 
@@ -180,7 +179,7 @@ fun MobileVerificationScreen(
                                 // TRIGGER VERIFY OTP
                                 viewModel.setEvent(MobileVerificationEvent.VerifyOtp)
                             },
-                            isLoading = state.progressBarState == ProgressBarState.Loading,
+                            isLoading = state.isOtpLoading,
                             errorMessage = state.errorMessage,
                             resendCount = state.resendCount,
                             backendMessage = state.backendMessage

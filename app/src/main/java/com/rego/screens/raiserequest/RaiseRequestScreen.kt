@@ -1,3 +1,4 @@
+// app/src/main/java/com/rego/screens/raiserequest/RaiseRequestScreen.kt
 package com.rego.screens.raiserequest
 
 import android.Manifest
@@ -8,37 +9,15 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CheckboxDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -59,24 +38,12 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.rego.R
 import com.rego.screens.base.DefaultScreenUI
-import com.rego.screens.components.DropdownField
-import com.rego.screens.components.RegoButton
-import com.rego.screens.components.TransparentInputField
-import com.rego.ui.theme.Color00954D
-import com.rego.ui.theme.Color1A1A1A_60
-import com.rego.ui.theme.Color1A1A1A_87
-import com.rego.ui.theme.Color1A1A1A_90
-import com.rego.ui.theme.ColorF9F9F9
-import com.rego.ui.theme.ColorFBFBFB
-import com.rego.ui.theme.NativeAndroidBaseArchitectureTheme
-import com.rego.ui.theme.fontMediumMontserrat
+import com.rego.screens.base.EffectHandler
+import com.rego.screens.base.ProgressBarState
+import com.rego.screens.components.*
+import com.rego.screens.raiserequest.data.*
+import com.rego.ui.theme.*
 import org.koin.androidx.compose.koinViewModel
-
-data class PartType(
-    val id: String,
-    val title: String,
-    val icon: Int
-)
 
 @Composable
 fun RaiseRequestScreen(
@@ -85,13 +52,27 @@ fun RaiseRequestScreen(
 ) {
     val viewModel: RaiseRequestViewModel = koinViewModel()
     val state by viewModel.state.collectAsState()
-    val context = LocalContext.current
 
     LaunchedEffect(Unit) {
         viewModel.setEvent(RaiseRequestEvent.Init)
     }
 
-    DefaultScreenUI(progressBarState = state.progressBarState) { paddingValues ->
+    // Handle navigation actions
+    EffectHandler(effectFlow = viewModel.action) { action ->
+        when (action) {
+            is RaiseRequestAction.NavigateToSuccess -> {
+                onSubmit()
+            }
+            is RaiseRequestAction.ShowError -> {
+                // Error is handled through the error flow
+            }
+        }
+    }
+
+    DefaultScreenUI(
+        progressBarState = state.progressBarState,
+        errors = viewModel.errors
+    ) { paddingValues ->
         Box(
             modifier = Modifier
                 .background(ColorF9F9F9)
@@ -103,7 +84,18 @@ fun RaiseRequestScreen(
             onFieldChange = { field, value ->
                 viewModel.setEvent(RaiseRequestEvent.FieldChanged(field, value))
             },
-            onSubmit = onSubmit
+            onPartTypeSelect = { partType ->
+                viewModel.setEvent(RaiseRequestEvent.SelectPartType(partType))
+            },
+            onVehicleVariantSelect = { variant ->
+                viewModel.setEvent(RaiseRequestEvent.SelectVehicleVariant(variant))
+            },
+            onWorkshopDealerSelect = { dealer ->
+                viewModel.setEvent(RaiseRequestEvent.SelectWorkshopDealer(dealer))
+            },
+            onSubmit = {
+                viewModel.setEvent(RaiseRequestEvent.SubmitRequest)
+            }
         )
     }
 }
@@ -113,26 +105,28 @@ fun RaiseRequestScreenContent(
     modifier: Modifier = Modifier,
     state: RaiseRequestViewState,
     onFieldChange: (String, Any) -> Unit,
+    onPartTypeSelect: (PartTypeReference) -> Unit,
+    onVehicleVariantSelect: (VehicleVariant) -> Unit,
+    onWorkshopDealerSelect: (WorkshopDealer) -> Unit,
     onSubmit: () -> Unit = {},
 ) {
     val context = LocalContext.current
+    val scrollState = rememberScrollState()
 
-    var carMakeExpanded by remember { mutableStateOf(false) }
-    var carModelExpanded by remember { mutableStateOf(false) }
+    // Dropdown expansion states
+    var vehicleMakeExpanded by remember { mutableStateOf(false) }
+    var vehicleModelExpanded by remember { mutableStateOf(false) }
     var fuelTypeExpanded by remember { mutableStateOf(false) }
-    var carVariantExpanded by remember { mutableStateOf(false) }
-    var dealerLocationExpanded by remember { mutableStateOf(false) }
+    var vehicleVariantExpanded by remember { mutableStateOf(false) }
+    var workshopLocationExpanded by remember { mutableStateOf(false) }
+    var workshopDealerExpanded by remember { mutableStateOf(false) }
     var policyTypeExpanded by remember { mutableStateOf(false) }
 
+    // Image picker states
     var showImagePickerDialog by remember { mutableStateOf(false) }
     var hasPermissions by remember { mutableStateOf(false) }
     val tempImageUriRemember = remember { mutableStateOf<Uri?>(null) }
-
     var lastImageSource by remember { mutableStateOf<String?>(null) }
-
-    val selectedImages = remember(state.images) {
-        mutableListOf<Uri>().apply { addAll(state.images.mapNotNull { runCatching { Uri.parse(it) }.getOrNull() }) }
-    }
 
     fun createTempImageUri(context: Context): Uri {
         val imageFileName = "temp_image_${System.currentTimeMillis()}.jpg"
@@ -178,32 +172,23 @@ fun RaiseRequestScreenContent(
                     cameraLauncher.launch(uri)
                 } catch (e: Exception) {
                     println("Error creating temp file: ${e.message}")
-                    e.printStackTrace()
                 }
             } else if (lastImageSource == "GALLERY") {
                 galleryLauncher.launch("image/*")
             }
-            lastImageSource = null // Reset so next time intent is fresh
+            lastImageSource = null
         }
     }
-
-    val opts = state.formOptions ?: RaiseRequestFormOptions(
-        emptyList(),
-        emptyList(),
-        emptyList(),
-        emptyList(),
-        emptyList(),
-        emptyList(),
-        emptyList()
-    )
 
     Column(
         modifier = modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(scrollState)
             .padding(horizontal = 16.dp)
     ) {
         Spacer(modifier = Modifier.height(12.dp))
+
+        // Part Type Selection
         Text(
             text = "Part type",
             fontSize = 16.sp,
@@ -220,19 +205,28 @@ fun RaiseRequestScreenContent(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            items(opts.partTypes) { partType ->
-                PartTypeCard(
-                    icon = partType.icon,
-                    title = partType.title,
-                    isSelected = state.selectedPartType == partType.id,
-                    onClick = { onFieldChange("selectedPartType", partType.id) }
-                )
+        if (state.partTypes.isEmpty() && state.progressBarState == ProgressBarState.Idle) {
+            Text(
+                text = "Loading part types...",
+                color = Color.Gray,
+                fontSize = 12.sp
+            )
+        } else {
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                items(state.partTypes) { partType ->
+                    PartTypeCard(
+                        icon = getPartTypeIcon(partType.slug),
+                        title = partType.name,
+                        isSelected = state.selectedPartType?.id == partType.id,
+                        onClick = { onPartTypeSelect(partType) }
+                    )
+                }
             }
         }
 
         Spacer(modifier = Modifier.height(24.dp))
 
+        // Part Photos Section
         Text(
             text = "Part photos",
             fontSize = 16.sp,
@@ -240,7 +234,7 @@ fun RaiseRequestScreenContent(
             color = Color1A1A1A_90()
         )
         Text(
-            text = "Upload photos of the part",
+            text = "Upload photos of the part (Max 10 photos, 10MB each)",
             fontSize = 12.sp,
             fontWeight = FontWeight.SemiBold,
             color = Color1A1A1A_60(),
@@ -250,18 +244,15 @@ fun RaiseRequestScreenContent(
         Spacer(modifier = Modifier.height(16.dp))
 
         LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            items(selectedImages) { imageUri ->
+            items(state.images) { imageUri ->
                 Box {
                     AsyncImage(
-                        model = imageUri,
+                        model = Uri.parse(imageUri),
                         contentDescription = "Selected Photo",
                         modifier = Modifier
                             .size(80.dp)
                             .clip(RoundedCornerShape(8.dp)),
-                        contentScale = ContentScale.Crop,
-                        placeholder = painterResource(id = R.drawable.camera),
-                        error = painterResource(id = R.drawable.camera),
-                        fallback = painterResource(id = R.drawable.camera)
+                        contentScale = ContentScale.Crop
                     )
                     Icon(
                         painter = painterResource(id = R.drawable.delete),
@@ -273,129 +264,102 @@ fun RaiseRequestScreenContent(
                             .padding(end = 5.dp, top = 5.dp)
                             .clickable {
                                 val newImages = state.images.toMutableList()
-                                    .apply { remove(imageUri.toString()) }
+                                    .apply { remove(imageUri) }
                                 onFieldChange("images", newImages)
                             }
                     )
                 }
             }
-            item {
-                Box(
-                    modifier = Modifier
-                        .size(80.dp)
-                        .border(1.dp, Color(0xFF4CAF50), RoundedCornerShape(8.dp))
-                        .clip(RoundedCornerShape(8.dp))
-                        .clickable { showImagePickerDialog = true },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.camera),
-                            contentDescription = "Add Photo",
-                            tint = Color.Unspecified,
-                            modifier = Modifier.size(24.dp),
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text("Add Photo", fontSize = 10.sp, color = Color(0xFF4CAF50))
+
+            // Add photo button (only show if less than 10 photos)
+            if (state.images.size < 10) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .size(80.dp)
+                            .border(1.dp, Color(0xFF4CAF50), RoundedCornerShape(8.dp))
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable { showImagePickerDialog = true },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.camera),
+                                contentDescription = "Add Photo",
+                                tint = Color.Unspecified,
+                                modifier = Modifier.size(24.dp),
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text("Add Photo", fontSize = 10.sp, color = Color(0xFF4CAF50))
+                        }
                     }
                 }
             }
         }
 
-        if (showImagePickerDialog) {
-            AlertDialog(
-                onDismissRequest = { showImagePickerDialog = false },
-                title = { Text("Select Image") },
-                text = { Text("Choose an option to add a photo") },
-                confirmButton = {
-                    TextButton(
-                        onClick = {
-                            showImagePickerDialog = false
-                            if (hasPermissions) {
-                                try {
-                                    val uri = createTempImageUri(context)
-                                    tempImageUriRemember.value = uri
-                                    cameraLauncher.launch(uri)
-                                } catch (e: Exception) {
-                                    println("Error creating temp file: ${e.message}")
-                                    e.printStackTrace()
-                                }
-                            } else {
-                                lastImageSource = "CAMERA"
-                                permissionLauncher.launch(
-                                    arrayOf(Manifest.permission.CAMERA)
-                                )
-                            }
-                        }
-                    ) {
-                        Text("Camera")
-                    }
-                },
-                dismissButton = {
-                    TextButton(
-                        onClick = {
-                            lastImageSource = "GALLERY"
-                            galleryLauncher.launch("image/*")
-                            showImagePickerDialog = false
-                        }
-                    ) {
-                        Text("Gallery")
-                    }
-                }
-            )
-        }
-
         Spacer(modifier = Modifier.height(24.dp))
 
+        // Vehicle Details Section
         Text(
-            text = "Other Details",
+            text = "Vehicle Details",
             fontSize = 16.sp,
             fontWeight = FontWeight.SemiBold,
             color = Color1A1A1A_90(),
             modifier = Modifier.padding(bottom = 4.dp)
         )
         Text(
-            text = "Fill other details",
+            text = "Select your vehicle",
             fontSize = 12.sp,
             color = Color1A1A1A_60(),
             modifier = Modifier.padding(bottom = 16.dp)
         )
 
+        // Vehicle Make Dropdown
         DropdownField(
             label = "",
-            value = state.selectedCarMake,
-            onValueChange = { onFieldChange("selectedCarMake", it) },
-            onDropdownExpand = { carMakeExpanded = true },
-            expanded = carMakeExpanded,
-            options = opts.carMakes,
+            value = state.selectedVehicleMake,
+            onValueChange = { onFieldChange("selectedVehicleMake", it) },
+            onDropdownExpand = { vehicleMakeExpanded = true },
+            expanded = vehicleMakeExpanded,
+            options = state.vehicleMakes.map { it.make },
             placeholder = "Select Car Make",
-            onDismissRequest = { carMakeExpanded = false },
+            onDismissRequest = { vehicleMakeExpanded = false },
             labelComposable = { LabelWithAsterisk("Car Make*") }
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        // Vehicle Model Dropdown (enabled only if make is selected)
         DropdownField(
             label = "",
-            value = state.selectedCarModel,
-            onValueChange = { onFieldChange("selectedCarModel", it) },
-            onDropdownExpand = { carModelExpanded = true },
-            expanded = carModelExpanded,
-            options = opts.carModels,
-            placeholder = "Select Car Model",
-            onDismissRequest = { carModelExpanded = false },
+            value = state.selectedVehicleModel,
+            onValueChange = { onFieldChange("selectedVehicleModel", it) },
+            onDropdownExpand = {
+                if (state.selectedVehicleMake.isNotBlank()) {
+                    vehicleModelExpanded = true
+                }
+            },
+            expanded = vehicleModelExpanded,
+            options = state.vehicleModels.map { it.model },
+            placeholder = if (state.isLoadingModels) "Loading..." else "Select Car Model",
+            onDismissRequest = { vehicleModelExpanded = false },
             labelComposable = { LabelWithAsterisk("Car Model*") }
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        // Fuel Type Dropdown (enabled only if model is selected)
         DropdownField(
             label = "",
             value = state.selectedFuelType,
             onValueChange = { onFieldChange("selectedFuelType", it) },
-            onDropdownExpand = { fuelTypeExpanded = true },
+            onDropdownExpand = {
+                if (state.selectedVehicleModel.isNotBlank()) {
+                    fuelTypeExpanded = true
+                }
+            },
             expanded = fuelTypeExpanded,
-            options = opts.fuelTypes,
+            options = state.fuelTypes,
             placeholder = "Select Fuel Type",
             onDismissRequest = { fuelTypeExpanded = false },
             labelComposable = { LabelWithAsterisk("Fuel Type*") }
@@ -403,18 +367,90 @@ fun RaiseRequestScreenContent(
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        // Vehicle Variant Dropdown (enabled only if fuel type is selected)
         DropdownField(
             label = "",
-            value = state.selectedCarVariant,
-            onValueChange = { onFieldChange("selectedCarVariant", it) },
-            onDropdownExpand = { carVariantExpanded = true },
-            expanded = carVariantExpanded,
-            options = opts.carVariants,
-            placeholder = "Select Car Variant",
-            onDismissRequest = { carVariantExpanded = false },
+            value = state.selectedVehicleVariant?.variant ?: "",
+            onValueChange = { /* Handle through selection */ },
+            onDropdownExpand = {
+                if (state.selectedFuelType.isNotBlank()) {
+                    vehicleVariantExpanded = true
+                }
+            },
+            expanded = vehicleVariantExpanded,
+            options = state.vehicleVariants.map { it.variant },
+            placeholder = if (state.isLoadingVariants) "Loading..." else "Select Car Variant",
+            onDismissRequest = { vehicleVariantExpanded = false },
             labelComposable = { LabelWithAsterisk("Car Variant*") }
         )
 
+        // Handle variant selection in the dropdown
+        if (vehicleVariantExpanded) {
+            state.vehicleVariants.forEach { variant ->
+                if (variant.variant == state.selectedVehicleVariant?.variant) {
+                    // Already selected
+                } else {
+                    // Update selection when clicked
+                    LaunchedEffect(variant) {
+                        // This will be handled in the dropdown onClick
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Registration and Year Row
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            TransparentInputField(
+                modifier = Modifier.weight(1f),
+                label = "",
+                value = state.registrationNumber,
+                onValueChange = {
+                    // Format registration number as user types
+                    val formatted = it.uppercase().take(13)
+                    onFieldChange("registrationNumber", formatted)
+                },
+                placeholder = "DL01AB1234",
+                labelComposable = { LabelWithAsterisk("Registration Number*") }
+            )
+
+            TransparentInputField(
+                modifier = Modifier.weight(1f),
+                label = "",
+                value = state.makeYear,
+                onValueChange = {
+                    if (it.all { char -> char.isDigit() } && it.length <= 4) {
+                        onFieldChange("makeYear", it)
+                    }
+                },
+                placeholder = "2024",
+                keyboardType = KeyboardType.Number,
+                labelComposable = { LabelWithAsterisk("Make Year*") }
+            )
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Workshop Details Section
+        Text(
+            text = "Workshop Details",
+            fontSize = 16.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = Color1A1A1A_90(),
+            modifier = Modifier.padding(bottom = 4.dp)
+        )
+        Text(
+            text = "Select workshop location and dealer",
+            fontSize = 12.sp,
+            color = Color1A1A1A_60(),
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
+
+        // Inventory Pickup Checkbox
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(vertical = 8.dp)
@@ -434,29 +470,58 @@ fun RaiseRequestScreenContent(
             )
         }
 
-        TransparentInputField(
-            label = "",
-            value = state.dealerName,
-            onValueChange = { onFieldChange("dealerName", it) },
-            placeholder = "Enter Dealer Name",
-            labelComposable = { LabelWithAsterisk("Dealer Name*") }
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
+        // Workshop Location Dropdown
         DropdownField(
             label = "",
-            value = state.selectedDealerLocation,
-            onValueChange = { onFieldChange("selectedDealerLocation", it) },
-            onDropdownExpand = { dealerLocationExpanded = true },
-            expanded = dealerLocationExpanded,
-            options = opts.dealerLocations,
-            placeholder = "Select Dealer Location",
-            onDismissRequest = { dealerLocationExpanded = false },
-            labelComposable = { LabelWithAsterisk("Dealer Location*") }
+            value = state.selectedWorkshopLocation,
+            onValueChange = { onFieldChange("selectedWorkshopLocation", it) },
+            onDropdownExpand = {
+                if (state.selectedVehicleMake.isNotBlank()) {
+                    workshopLocationExpanded = true
+                }
+            },
+            expanded = workshopLocationExpanded,
+            options = state.workshopLocations.map { it.location },
+            placeholder = if (state.isLoadingLocations) "Loading..." else "Select Location",
+            onDismissRequest = { workshopLocationExpanded = false },
+            labelComposable = { LabelWithAsterisk("Workshop Location*") }
         )
 
         Spacer(modifier = Modifier.height(16.dp))
+
+        // Workshop Dealer Dropdown
+        DropdownField(
+            label = "",
+            value = state.selectedWorkshopDealer?.dealerName ?: "",
+            onValueChange = { /* Handle through selection */ },
+            onDropdownExpand = {
+                if (state.selectedWorkshopLocation.isNotBlank()) {
+                    workshopDealerExpanded = true
+                }
+            },
+            expanded = workshopDealerExpanded,
+            options = state.workshopDealers.map { it.dealerName },
+            placeholder = if (state.isLoadingDealers) "Loading..." else "Select Dealer",
+            onDismissRequest = { workshopDealerExpanded = false },
+            labelComposable = { LabelWithAsterisk("Workshop Dealer*") }
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Advisor Details Section
+        Text(
+            text = "Advisor Details",
+            fontSize = 16.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = Color1A1A1A_90(),
+            modifier = Modifier.padding(bottom = 4.dp)
+        )
+        Text(
+            text = "Enter advisor information",
+            fontSize = 12.sp,
+            color = Color1A1A1A_60(),
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
 
         TransparentInputField(
             label = "",
@@ -471,13 +536,32 @@ fun RaiseRequestScreenContent(
         TransparentInputField(
             label = "",
             value = state.advisorContactNumber,
-            onValueChange = { onFieldChange("advisorContactNumber", it) },
-            placeholder = "Enter Advisor Contact Number",
+            onValueChange = {
+                if (it.all { char -> char.isDigit() } && it.length <= 10) {
+                    onFieldChange("advisorContactNumber", it)
+                }
+            },
+            placeholder = "Enter 10-digit number",
             keyboardType = KeyboardType.Phone,
             labelComposable = { LabelWithAsterisk("Advisor Contact Number*") }
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Policy Details Section
+        Text(
+            text = "Policy Details",
+            fontSize = 16.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = Color1A1A1A_90(),
+            modifier = Modifier.padding(bottom = 4.dp)
+        )
+        Text(
+            text = "Enter policy information",
+            fontSize = 12.sp,
+            color = Color1A1A1A_60(),
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
 
         DropdownField(
             label = "",
@@ -485,7 +569,7 @@ fun RaiseRequestScreenContent(
             onValueChange = { onFieldChange("selectedPolicyType", it) },
             onDropdownExpand = { policyTypeExpanded = true },
             expanded = policyTypeExpanded,
-            options = opts.policyTypes,
+            options = state.policyTypes,
             placeholder = "Select Policy Type",
             onDismissRequest = { policyTypeExpanded = false },
             labelComposable = { LabelWithAsterisk("Policy Type*") }
@@ -494,44 +578,84 @@ fun RaiseRequestScreenContent(
         Spacer(modifier = Modifier.height(16.dp))
 
         TransparentInputField(
-            label = "Claim Number",
+            label = "",
             value = state.claimNumber,
-            onValueChange = { onFieldChange("claimNumber", it) },
-            placeholder = "Enter Claim Number"
+            onValueChange = {
+                if (it.all { char -> char.isDigit() }) {
+                    onFieldChange("claimNumber", it)
+                }
+            },
+            placeholder = "Enter Claim Number",
+            keyboardType = KeyboardType.Number,
+            labelComposable = { LabelWithAsterisk("Claim Number*") }
+        )
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        // Submit Button
+        RegoButton(
+            onClick = onSubmit,
+            text = if (state.progressBarState == ProgressBarState.Loading) "Submitting..." else "Submit",
+            enabled = state.isFormValid && state.progressBarState != ProgressBarState.Loading
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            TransparentInputField(
-                modifier = Modifier.weight(1f),
-                label = "Car Reg Number",
-                value = state.carRegNumber,
-                onValueChange = { onFieldChange("carRegNumber", it) },
-                placeholder = "Registration Number"
-            )
-
-            TransparentInputField(
-                modifier = Modifier.weight(1f),
-                label = "Make Year",
-                value = state.makeYear,
-                onValueChange = { onFieldChange("makeYear", it) },
-                placeholder = "Enter Make year",
-                keyboardType = KeyboardType.Number
+        // Form validation hint
+        if (!state.isFormValid) {
+            Text(
+                text = "* All fields marked with asterisk are required",
+                fontSize = 10.sp,
+                color = Color.Red,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center
             )
         }
 
         Spacer(modifier = Modifier.height(32.dp))
+    }
 
-        RegoButton(
-            onClick = { onSubmit() },
-            text = "Submit"
+    // Image picker dialog
+    if (showImagePickerDialog) {
+        AlertDialog(
+            onDismissRequest = { showImagePickerDialog = false },
+            title = { Text("Select Image") },
+            text = { Text("Choose an option to add a photo") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showImagePickerDialog = false
+                        if (hasPermissions) {
+                            try {
+                                val uri = createTempImageUri(context)
+                                tempImageUriRemember.value = uri
+                                cameraLauncher.launch(uri)
+                            } catch (e: Exception) {
+                                println("Error creating temp file: ${e.message}")
+                            }
+                        } else {
+                            lastImageSource = "CAMERA"
+                            permissionLauncher.launch(
+                                arrayOf(Manifest.permission.CAMERA)
+                            )
+                        }
+                    }
+                ) {
+                    Text("Camera")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        lastImageSource = "GALLERY"
+                        galleryLauncher.launch("image/*")
+                        showImagePickerDialog = false
+                    }
+                ) {
+                    Text("Gallery")
+                }
+            }
         )
-
-        Spacer(modifier = Modifier.height(16.dp))
     }
 }
 
@@ -640,6 +764,17 @@ fun PartTypeCard(
                 color = Color1A1A1A_87()
             )
         }
+    }
+}
+
+// Helper function to get icon based on part type slug
+fun getPartTypeIcon(slug: String): Int {
+    return when (slug.uppercase()) {
+        "ALLOY_WHEELS" -> R.drawable.alloy_wheel
+        "HEADLAMPS" -> R.drawable.car_light
+        "PLASTIC" -> R.drawable.car_bumper
+        "LEATHER_FABRIC" -> R.drawable.car_seat
+        else -> R.drawable.alloy_wheel
     }
 }
 

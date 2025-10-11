@@ -1,49 +1,77 @@
 package com.rego.screens.joinus
-import androidx.compose.foundation.layout.*
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.rego.screens.base.ProgressBarState
-import org.koin.androidx.compose.koinViewModel
+import androidx.compose.ui.unit.sp
+import com.rego.R
+import com.rego.screens.base.DefaultScreenUI
+import com.rego.screens.base.UIComponent
+import com.rego.screens.components.DropdownField
+import com.rego.screens.components.RegoButton
+import com.rego.screens.components.TransparentInputField
+import com.rego.ui.theme.Color00954D
+import com.rego.ui.theme.Color1A1A1A
+import com.rego.ui.theme.Color1A1A1A_60
+import com.rego.ui.theme.fontSemiBoldMontserrat
+import org.koin.compose.viewmodel.koinViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun JoinUsParentScreen(
-    onNavigateBack: () -> Unit = {},
+    onNavigateBack: () -> Unit,
     onRegistrationSuccess: (userId: String?, firebaseUid: String?) -> Unit
-) {
+){
+    val pagerState = rememberPagerState(pageCount = { 2 })
+    val coroutineScope = rememberCoroutineScope()
     val viewModel: JoinUsViewModel = koinViewModel()
-    val state by viewModel.state.collectAsState()
-    val snackbarHostState = remember { SnackbarHostState() }
+    val state = viewModel.state.collectAsState()
 
     var showErrorDialog by remember { mutableStateOf(false) }
-    var errorDialogData by remember { mutableStateOf<com.rego.screens.base.UIComponent.Dialog?>(null) }
+    var errorDialogData by remember { mutableStateOf<UIComponent.Dialog?>(null) }
 
     var showErrorScreen by remember { mutableStateOf(false) }
-    var errorScreenData by remember { mutableStateOf<com.rego.screens.base.UIComponent.ErrorData?>(null) }
+    var errorScreenData by remember { mutableStateOf<UIComponent.ErrorData?>(null) }
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    var name by remember { mutableStateOf("") }
-    var email by remember { mutableStateOf("") }
-    var phoneNumber by remember { mutableStateOf("") }
-    var city by remember { mutableStateOf("") }
-    var stateInput by remember { mutableStateOf("") }
-    var role by remember { mutableStateOf("") }
-    var showCompanyDropdown by remember { mutableStateOf(false) }
-    var showRoleDropdown by remember { mutableStateOf(false) }
-
-    val roles = listOf("CSM", "Sales Manager", "Agent", "Branch Manager", "Team Lead", "Area Manager")
-
-    // Collect actions (one-time events)
     LaunchedEffect(Unit) {
         viewModel.action.collect { action ->
             when (action) {
@@ -68,290 +96,279 @@ fun JoinUsParentScreen(
             }
         }
     }
-
-    // Error Dialog
-    if (showErrorDialog && errorDialogData != null) {
-        AlertDialog(
-            onDismissRequest = { showErrorDialog = false },
-            title = { Text(errorDialogData!!.title) },
-            text = { Text(errorDialogData!!.message) },
-            confirmButton = {
-                TextButton(onClick = { showErrorDialog = false }) {
-                    Text("OK")
-                }
-            }
-        )
-    }
-
-    // Error Screen (Connection Error)
-    if (showErrorScreen && errorScreenData != null) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Text(
-                text = errorScreenData!!.title,
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = errorScreenData!!.message,
-                style = MaterialTheme.typography.bodyMedium
-            )
-            Spacer(modifier = Modifier.height(24.dp))
-            Button(onClick = {
-                showErrorScreen = false
-                viewModel.setEvent(JoinUsEvent.RetryLoadingCompanies)
-            }) {
-                Text(errorScreenData!!.buttonText)
-            }
-        }
-        return
-    }
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Join Us") },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
-                )
-            )
-        },
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
-    ) { paddingValues ->
-
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            // Loading Indicator
-            if (state.progressBarState == ProgressBarState.Loading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.align(Alignment.Center)
-                )
-            }
-
+    Box(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        DefaultScreenUI(progressBarState = state.value.progressBarState) { paddingValues ->
             Column(
-                modifier = Modifier
+                Modifier
                     .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(16.dp)
+                    .padding(paddingValues)
             ) {
-                Text(
-                    text = "Partner with REGO",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-
-                Text(
-                    text = "Join our network and grow your insurance business",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(bottom = 24.dp)
-                )
-
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = { Text("Full Name *") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    enabled = state.progressBarState != ProgressBarState.Loading
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                OutlinedTextField(
-                    value = email,
-                    onValueChange = { email = it },
-                    label = { Text("Email *") },
-                    modifier = Modifier.fillMaxWidth(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                    singleLine = true,
-                    enabled = state.progressBarState != ProgressBarState.Loading
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                OutlinedTextField(
-                    value = phoneNumber,
-                    onValueChange = {
-                        if (it.length <= 10 && it.all { char -> char.isDigit() }) {
-                            phoneNumber = it
-                        }
-                    },
-                    label = { Text("Phone Number *") },
-                    modifier = Modifier.fillMaxWidth(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                    singleLine = true,
-                    prefix = { Text("+91 ") },
-                    enabled = state.progressBarState != ProgressBarState.Loading
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                OutlinedTextField(
-                    value = city,
-                    onValueChange = { city = it },
-                    label = { Text("City *") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    enabled = state.progressBarState != ProgressBarState.Loading
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                OutlinedTextField(
-                    value = stateInput,
-                    onValueChange = { stateInput = it },
-                    label = { Text("State *") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    enabled = state.progressBarState != ProgressBarState.Loading
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Insurance Company Dropdown
-                ExposedDropdownMenuBox(
-                    expanded = showCompanyDropdown,
-                    onExpandedChange = {
-                        if (state.progressBarState != ProgressBarState.Loading) {
-                            showCompanyDropdown = it
-                        }
-                    }
-                ) {
-                    OutlinedTextField(
-                        value = state.selectedCompany?.name ?: "",
-                        onValueChange = {},
-                        readOnly = true,
-                        label = { Text("Insurance Company *") },
-                        trailingIcon = {
-                            ExposedDropdownMenuDefaults.TrailingIcon(
-                                expanded = showCompanyDropdown
-                            )
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .menuAnchor(),
-                        colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
-                        enabled = state.progressBarState != ProgressBarState.Loading
-                    )
-
-                    ExposedDropdownMenu(
-                        expanded = showCompanyDropdown,
-                        onDismissRequest = { showCompanyDropdown = false }
-                    ) {
-                        state.insuranceCompanies.forEach { company ->
-                            DropdownMenuItem(
-                                text = { Text(company.name) },
-                                onClick = {
-                                    viewModel.setEvent(JoinUsEvent.SelectInsuranceCompany(company))
-                                    showCompanyDropdown = false
-                                }
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Role Dropdown
-                ExposedDropdownMenuBox(
-                    expanded = showRoleDropdown,
-                    onExpandedChange = {
-                        if (state.progressBarState != ProgressBarState.Loading) {
-                            showRoleDropdown = it
-                        }
-                    }
-                ) {
-                    OutlinedTextField(
-                        value = role,
-                        onValueChange = {},
-                        readOnly = true,
-                        label = { Text("Role *") },
-                        trailingIcon = {
-                            ExposedDropdownMenuDefaults.TrailingIcon(
-                                expanded = showRoleDropdown
-                            )
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .menuAnchor(),
-                        colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
-                        enabled = state.progressBarState != ProgressBarState.Loading
-                    )
-
-                    ExposedDropdownMenu(
-                        expanded = showRoleDropdown,
-                        onDismissRequest = { showRoleDropdown = false }
-                    ) {
-                        roles.forEach { roleOption ->
-                            DropdownMenuItem(
-                                text = { Text(roleOption) },
-                                onClick = {
-                                    role = roleOption
-                                    showRoleDropdown = false
-                                }
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(32.dp))
-
-                Button(
-                    onClick = {
-                        viewModel.setEvent(
-                            JoinUsEvent.SubmitRegistration(
-                                name = name,
-                                email = email,
-                                phoneNumber = phoneNumber,
-                                city = city,
-                                state = stateInput,
-                                role = role,
-                                company = state.selectedCompany?.name ?: ""
-                            )
-                        )
-                    },
+                // Top Bar
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(56.dp),
-                    enabled = name.isNotBlank() &&
-                            email.isNotBlank() &&
-                            phoneNumber.length == 10 &&
-                            city.isNotBlank() &&
-                            stateInput.isNotBlank() &&
-                            state.selectedCompany != null &&
-                            role.isNotBlank() &&
-                            state.progressBarState != ProgressBarState.Loading
+                        .background(Color.White)
+                        .padding(start = 8.dp, top = 12.dp, end = 8.dp, bottom = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.back),
+                        contentDescription = "Back",
+                        tint = Color1A1A1A.copy(alpha = 0.9f),
+                        modifier = Modifier
+                            .width(28.dp)
+                            .height(28.dp)
+                            .padding(4.dp)
+                            .padding(end = 4.dp)
+                            .clickable { onNavigateBack() }
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
                     Text(
-                        text = "Submit Application",
-                        style = MaterialTheme.typography.titleMedium
+                        text = "Join Us",
+                        style = fontSemiBoldMontserrat().copy(fontSize = 16.sp),
+                        color = Color.Black
                     )
                 }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Text(
-                    text = "* All fields are required",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color.White.copy(alpha = 0.5f))
+                        .height(2.dp)
+                        .shadow(1.dp)
                 )
+                HorizontalPager(
+                    state = pagerState,
+                    modifier = Modifier.weight(1f),
+                    userScrollEnabled = false
+                ) { page ->
+                    when (page) {
+                        0 -> JoinUsFormScreen(
+                            insuranceOptions = state.value.insuranceCompanies.map { it.name },
+                            companyTypeOptions = listOf("CSM", "CR", "admin"),
+                            onSubmit = { name, email, phone, city, st, insurance, companyType ->
+                                viewModel.onTriggerEvent(
+                                    JoinUsEvent.SubmitRegistration(
+                                        name = name,
+                                        email = email,
+                                        phoneNumber = phone,
+                                        city = city,
+                                        state = st,
+                                        company = insurance,
+                                        role = companyType
+                                    )
+                                )
+                            }
+                        )
+
+                        1 -> JoinUsSuccessScreen(onOkay = onRegistrationSuccess)
+                    }
+                }
+                Spacer(modifier = Modifier.height(16.dp))
             }
         }
+    }
+}
+
+@Composable
+private fun JoinUsFormScreen(
+    insuranceOptions: List<String>,
+    onSubmit: (
+        name: String,
+        email: String,
+        phone: String,
+        city: String,
+        state: String,
+        insuranceCompany: String,
+        companyType: String
+    ) -> Unit,
+    companyTypeOptions: List<String>
+) {
+    var name by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
+    var phone by remember { mutableStateOf("") }
+    var city by remember { mutableStateOf("") }
+    var state by remember { mutableStateOf("") }
+    var companyType by remember { mutableStateOf("") }
+
+    var insuranceCompany by remember { mutableStateOf("") }
+    var isInsuranceDropdown by remember { mutableStateOf(false) }
+    var isCompanyTypeDropdown by remember { mutableStateOf(false) }
+
+
+    // Email validation using regex
+    fun isValidEmail(email: String): Boolean {
+        val regex = Regex("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}$")
+        return regex.matches(email)
+    }
+
+    // Phone validation: only digits, and 10 digits
+    fun isValidPhone(phone: String): Boolean =
+        phone.length == 10 && phone.all { it.isDigit() }
+
+    val isFormValid =
+        name.isNotBlank() && isValidEmail(email) && isValidPhone(phone) && city.isNotBlank() && state.isNotBlank() && insuranceCompany.isNotBlank() && companyType.isNotBlank()
+    val scrollState = rememberScrollState()
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.White)
+            .padding(horizontal = 18.dp)
+            .verticalScroll(scrollState),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = "Become a Insurance partner today!",
+            fontWeight = FontWeight.SemiBold,
+            fontSize = 16.sp,
+            color = Color1A1A1A,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(top = 16.dp)
+        )
+        Text(
+            text = "Fill out the form and our team will get back to you.",
+            color = Color1A1A1A_60(),
+            fontSize = 14.sp,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(top = 8.dp, bottom = 18.dp)
+        )
+        Card(
+            elevation = CardDefaults.cardElevation(
+                defaultElevation = 2.dp
+            )
+        ) {
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .background(Color.White)
+                    .padding(18.dp)
+                    .wrapContentHeight(),
+                verticalArrangement = Arrangement.spacedBy(17.dp)
+            ) {
+                TransparentInputField(
+                    label = "Name",
+                    value = name,
+                    onValueChange = { name = it },
+                    leadingIcon = R.drawable.person,
+                    placeholder = "Enter Name"
+                )
+                TransparentInputField(
+                    label = "Official Email ID",
+                    value = email,
+                    onValueChange = { email = it },
+                    leadingIcon = R.drawable.email,
+                    placeholder = "Enter Official E-mail Id",
+                    keyboardType = KeyboardType.Email
+                )
+                TransparentInputField(
+                    label = "Phone Number",
+                    value = phone,
+                    onValueChange = { phone = it.filter { ch -> ch.isDigit() }.take(10) },
+                    leadingIcon = R.drawable.phone,
+                    placeholder = "Enter Phone number",
+                    keyboardType = KeyboardType.Phone
+                )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    TransparentInputField(
+                        label = "City",
+                        value = city,
+                        onValueChange = { city = it },
+                        leadingIcon = R.drawable.location,
+                        placeholder = "Enter City",
+                        modifier = Modifier.weight(1f)
+                    )
+                    TransparentInputField(
+                        label = "State",
+                        value = state,
+                        onValueChange = { state = it },
+                        leadingIcon = R.drawable.location,
+                        placeholder = "Enter State",
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                DropdownField(
+                    label = "Insurance company",
+                    value = insuranceCompany,
+                    onValueChange = { insuranceCompany = it },
+                    onDropdownExpand = { isInsuranceDropdown = true },
+                    expanded = isInsuranceDropdown,
+                    leadingIcon = R.drawable.location,
+                    placeholder = "Select Insurance Company",
+                    onDismissRequest = { isInsuranceDropdown = false },
+                    options = insuranceOptions,
+                )
+                DropdownField(
+                    label = "Company Tyoe",
+                    value = companyType,
+                    onValueChange = { companyType = it },
+                    onDropdownExpand = { isCompanyTypeDropdown = true },
+                    expanded = isCompanyTypeDropdown,
+                    leadingIcon = R.drawable.location,
+                    placeholder = "Select Company Type",
+                    onDismissRequest = { isCompanyTypeDropdown = false },
+                    options = companyTypeOptions,
+                )
+            }
+
+        }
+        Spacer(modifier = Modifier.height(40.dp))
+        RegoButton(
+            onClick = {
+                onSubmit(name, email, phone, city, state, insuranceCompany, companyType)
+            },
+            text = "Submit",
+            enabled = isFormValid
+        )
+    }
+}
+
+
+@Composable
+private fun JoinUsSuccessScreen(onOkay: (String?, String?) -> Unit) {
+    Column(
+        Modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .size(88.dp)
+                .background(Color00954D, shape = CircleShape)
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.tick),
+                contentDescription = "Success",
+                tint = Color.White,
+                modifier = Modifier.size(40.dp)
+            )
+        }
+        Spacer(modifier = Modifier.height(36.dp))
+        Text(
+            text = "Response Submitted",
+            color = Color1A1A1A,
+            fontWeight = FontWeight.SemiBold,
+            fontSize = 16.sp,
+            textAlign = TextAlign.Center
+        )
+        Text(
+            text = "Thank you for your interest. We will\nreach out to you within the next 24 hours.",
+            color = Color1A1A1A_60(),
+            fontSize = 12.sp,
+            modifier = Modifier.padding(vertical = 10.dp),
+            textAlign = TextAlign.Center
+        )
+        Spacer(modifier = Modifier.height(56.dp))
+        RegoButton(
+            onClick = onOkay as () -> Unit,
+            text = "Okay"
+        )
     }
 }

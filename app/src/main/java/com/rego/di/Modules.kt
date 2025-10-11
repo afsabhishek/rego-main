@@ -102,7 +102,7 @@ val appModule = module {
             userPreferences = get()
         )
     }
-    viewModel { ProfileViewModel(get()) }
+    viewModel { ProfileViewModel(get(), userPreferences = get()) }
 
     // Notifications
     factory<NotificationApi> { NotificationApiImpl() }
@@ -123,11 +123,6 @@ val appModule = module {
         )
     }
     viewModel { OrderDetailsViewModel(get()) }
-
-    // Raise a Request
-    factory<RaiseRequestApi> { RaiseRequestApiImpl() }
-    factory { RaiseRequestInteractor(get()) }
-    viewModel { RaiseRequestViewModel(get()) }
 
     // Set password
     factory<SetPasswordApi> { SetPasswordApiImpl() }
@@ -170,6 +165,25 @@ val appModule = module {
 
     viewModel {
         JoinUsViewModel(
+            interactor = get()
+        )
+    }
+
+    factory<RaiseRequestApi> {
+            RaiseRequestApiImpl(
+            ktorClient = get()
+        )
+    }
+
+    factory {
+        RaiseRequestInteractor(
+            api = get(),
+            userPreferences = get()
+        )
+    }
+
+    viewModel {
+        RaiseRequestViewModel(
             interactor = get()
         )
     }
