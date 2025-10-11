@@ -36,8 +36,6 @@ class MobileVerificationInteractor(
                     buttonText = "Retry"
                 )
             ))
-        } finally {
-            emit(DataState.Loading(progressBarState = ProgressBarState.Idle))
         }
     }
 

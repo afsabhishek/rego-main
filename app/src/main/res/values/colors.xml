@@ -7,4 +7,7 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="ic_launcher_background">#0A914C</color>
+    <color name="rego_splash_bg_top">#0B5F3C</color>
+    <color name="rego_splash_bg_bottom">#12B76A</color>
 </resources>

@@ -65,7 +65,7 @@ class MobileVerificationViewModel(
             interactor.requestOtp(state.value.mobileNumber).collect { dataState ->
                 when (dataState) {
                     is DataState.Loading -> {
-                        setState { copy(progressBarState = dataState.progressBarState) }
+                        setState { copy(isGetOtpLoading = true, errorMessage = null) }
                     }
 
                     is DataState.Data -> {
@@ -73,6 +73,7 @@ class MobileVerificationViewModel(
                             if (otpData.otpSent) {
                                 setState {
                                     copy(
+                                        isGetOtpLoading = false,
                                         isOtpRequested = true,
                                         backendMessage = otpData.message
                                     )
@@ -80,7 +81,7 @@ class MobileVerificationViewModel(
                                 startResendTimer()
 
                                 setError {
-                                    UIComponent.Snackbar(
+                                    Snackbar(
                                         message = otpData.message,
                                         buttonText = "OK"
                                     )
@@ -90,6 +91,7 @@ class MobileVerificationViewModel(
                     }
 
                     is DataState.Error -> {
+                        setState { copy(isGetOtpLoading = false) }
                         setError { dataState.uiComponent }
                     }
 

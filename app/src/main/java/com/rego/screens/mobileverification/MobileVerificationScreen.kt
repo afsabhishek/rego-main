@@ -158,7 +158,7 @@ fun MobileVerificationScreen(
                                 // TRIGGER GET OTP
                                 viewModel.setEvent(MobileVerificationEvent.GetOtp)
                             },
-                            isLoading = state.progressBarState == ProgressBarState.Loading,
+                            isLoading = state.isGetOtpLoading,
                             errorMessage = state.errorMessage
                         )
 

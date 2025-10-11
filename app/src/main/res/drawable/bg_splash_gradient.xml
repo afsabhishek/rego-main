@@ -1,0 +1,11 @@
+<gradient-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:type="linear"
+                android:startColor="@color/rego_splash_bg_top"
+                android:endColor="@color/rego_splash_bg_bottom"
+                android:angle="270"/>
+        </shape>
+    </item>
+</gradient-list>

@@ -124,11 +124,6 @@ val appModule = module {
     }
     viewModel { OrderDetailsViewModel(get()) }
 
-    // Raise a Request
-    factory<RaiseRequestApi> { RaiseRequestApiImpl() }
-    factory { RaiseRequestInteractor(get()) }
-    viewModel { RaiseRequestViewModel(get()) }
-
     // Set password
     factory<SetPasswordApi> { SetPasswordApiImpl() }
     factory { SetPasswordInteractor(get()) }
@@ -170,6 +165,25 @@ val appModule = module {
 
     viewModel {
         JoinUsViewModel(
+            interactor = get()
+        )
+    }
+
+    factory<RaiseRequestApi> {
+            RaiseRequestApiImpl(
+            ktorClient = get()
+        )
+    }
+
+    factory {
+        RaiseRequestInteractor(
+            api = get(),
+            userPreferences = get()
+        )
+    }
+
+    viewModel {
+        RaiseRequestViewModel(
             interactor = get()
         )
     }

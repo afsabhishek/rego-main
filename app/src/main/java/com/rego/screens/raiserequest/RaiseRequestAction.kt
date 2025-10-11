@@ -2,6 +2,8 @@ package com.rego.screens.raiserequest
 
 import com.rego.screens.base.ViewSingleAction
 
+// Updated Actions
 sealed class RaiseRequestAction : ViewSingleAction {
-    // Add UI actions if needed
+    object NavigateToSuccess : RaiseRequestAction()
+    data class ShowError(val message: String) : RaiseRequestAction()
 }
