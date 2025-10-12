@@ -340,7 +340,7 @@ fun RaiseRequestScreenContent(
                 }
             },
             expanded = vehicleModelExpanded,
-            options = state.vehicleModels.map { it.model },
+            options = state.vehicleModels.map { it },
             placeholder = if (state.isLoadingModels) "Loading..." else "Select Car Model",
             onDismissRequest = { vehicleModelExpanded = false },
             labelComposable = { LabelWithAsterisk("Car Model*") }
@@ -481,7 +481,7 @@ fun RaiseRequestScreenContent(
                 }
             },
             expanded = workshopLocationExpanded,
-            options = state.workshopLocations.map { it.location },
+            options = state.workshopLocations.map { it },
             placeholder = if (state.isLoadingLocations) "Loading..." else "Select Location",
             onDismissRequest = { workshopLocationExpanded = false },
             labelComposable = { LabelWithAsterisk("Workshop Location*") }

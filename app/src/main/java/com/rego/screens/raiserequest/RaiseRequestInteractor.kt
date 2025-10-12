@@ -45,7 +45,7 @@ class RaiseRequestInteractor(
         }
     }
 
-    fun getVehicleModels(make: String): Flow<DataState<List<VehicleModel>>> = flow {
+    fun getVehicleModels(make: String): Flow<DataState<List<String>>> = flow {
         try {
             emit(DataState.Loading(progressBarState = ProgressBarState.Loading))
             val response = api.getVehicleModels(make)
@@ -107,7 +107,7 @@ class RaiseRequestInteractor(
         }
     }
 
-    fun getWorkshopLocations(make: String): Flow<DataState<List<WorkshopLocation>>> = flow {
+    fun getWorkshopLocations(make: String): Flow<DataState<List<String>>> = flow {
         try {
             emit(DataState.Loading(progressBarState = ProgressBarState.Loading))
             val response = api.getWorkshopLocations(make)

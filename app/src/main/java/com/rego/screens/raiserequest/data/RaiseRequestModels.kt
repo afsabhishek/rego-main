@@ -126,7 +126,7 @@ data class VehicleModelsResponse(
     @SerialName("success")
     val success: Boolean,
     @SerialName("data")
-    val data: List<VehicleModel>? = null,
+    val data: List<String>? = null,
     @SerialName("message")
     val message: String? = null
 )
@@ -146,7 +146,7 @@ data class WorkshopLocationsResponse(
     @SerialName("success")
     val success: Boolean,
     @SerialName("data")
-    val data: List<WorkshopLocation>? = null,
+    val data: List<String>? = null,
     @SerialName("message")
     val message: String? = null
 )

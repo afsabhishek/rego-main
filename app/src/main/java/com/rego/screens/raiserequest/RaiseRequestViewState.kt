@@ -17,7 +17,7 @@ data class RaiseRequestViewState(
     // Vehicle Selection
     val vehicleMakes: List<String> = emptyList(),
     val selectedVehicleMake: String = "",
-    val vehicleModels: List<VehicleModel> = emptyList(),
+    val vehicleModels: List<String> = emptyList(),
     val selectedVehicleModel: String = "",
     val fuelTypes: List<String> = FuelType.getAllDisplayNames(),
     val selectedFuelType: String = "",
@@ -25,7 +25,7 @@ data class RaiseRequestViewState(
     val selectedVehicleVariant: VehicleVariant? = null,
 
     // Workshop Selection
-    val workshopLocations: List<WorkshopLocation> = emptyList(),
+    val workshopLocations: List<String> = emptyList(),
     val selectedWorkshopLocation: String = "",
     val workshopDealers: List<WorkshopDealer> = emptyList(),
     val selectedWorkshopDealer: WorkshopDealer? = null,
