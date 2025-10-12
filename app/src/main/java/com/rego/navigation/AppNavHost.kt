@@ -164,23 +164,7 @@ fun AppNavHost() {
             )
         }
 
-        composable(Destinations.Profile.route) {
-            ProfileScreen(
-                onChangePasswordClick = {
-                    navController.navigate(Destinations.ResetPassword.route)
-                },
-                onBackClick = {
-                    navController.popBackStack()
-                },
-                onHomeClick = {
-                    // Navigate back to home, clearing the profile from backstack
-                    navController.navigate(Destinations.Home.route) {
-                        popUpTo(Destinations.Profile.route) { inclusive = true }
-                    }
-                }
-            )
-        }
-
+        // ✅ FIXED: Removed duplicate Profile route - keeping only this one
         composable(Destinations.Profile.route) { backStackEntry ->
             val viewModel: ProfileViewModel = koinViewModel()
             val state by viewModel.state.collectAsState()

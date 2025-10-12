@@ -172,8 +172,8 @@ class HomeViewModel(
                                         null
                                     },
                                     pagination = leadsData.pagination,
-                                    currentPage = page,
-                                    hasMorePages = leadsData.pagination.hasNext,
+                                    currentPage = leadsData.pagination.currentPage,
+                                    hasMorePages = leadsData.pagination.hasNextPage,
                                     isLoadingMore = false,
                                     leadsError = null
                                 )

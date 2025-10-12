@@ -97,6 +97,18 @@ object FileUtils {
     }
 
     /**
+     * Deletes a file safely
+     */
+    fun deleteFile(file: File?): Boolean {
+        return try {
+            file?.delete() ?: false
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
+    /**
      * Cleans up temporary files after upload
      */
     fun cleanupTempFiles(files: List<File>) {

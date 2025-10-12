@@ -19,7 +19,7 @@ data class LeadsResponse(
         @SerialName("pagination")
         val pagination: Pagination,
         @SerialName("filters")
-        val filters: Filters
+        val filters: Filters? = null
     ) {
         @Serializable
         data class Lead(
@@ -93,19 +93,34 @@ data class LeadsResponse(
 
         @Serializable
         data class Pagination(
-            @SerialName("page")
-            val page: Int,
+            @SerialName("currentPage")
+            val currentPage: Int = 1,
+
+            @SerialName("totalPages")
+            val totalPages: Int = 1,
+
+            @SerialName("totalCount")
+            val totalCount: Int = 0,
+
             @SerialName("limit")
-            val limit: Int,
-            @SerialName("total")
-            val total: Int,
-            @SerialName("pages")
-            val pages: Int,
-            @SerialName("hasNext")
-            val hasNext: Boolean,
-            @SerialName("hasPrev")
-            val hasPrev: Boolean
-        )
+            val limit: Int = 20,
+
+            @SerialName("offset")
+            val offset: Int = 0,
+
+            @SerialName("hasNextPage")
+            val hasNextPage: Boolean = false,
+
+            @SerialName("hasPrevPage")
+            val hasPrevPage: Boolean = false
+        ) {
+            // Backward compatibility properties
+            val page: Int get() = currentPage
+            val total: Int get() = totalCount
+            val pages: Int get() = totalPages
+            val hasNext: Boolean get() = hasNextPage
+            val hasPrev: Boolean get() = hasPrevPage
+        }
 
         @Serializable
         data class Filters(

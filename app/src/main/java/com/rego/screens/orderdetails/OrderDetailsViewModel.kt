@@ -99,8 +99,8 @@ class OrderDetailsViewModel(
                             copy(
                                 leads = if (append) leads + newLeads else newLeads,
                                 pagination = dataState.data?.pagination,
-                                currentPage = page,
-                                hasMorePages = dataState.data?.pagination?.hasNext ?: false,
+                                currentPage = dataState.data?.pagination?.currentPage ?: page,
+                                hasMorePages = dataState.data?.pagination?.hasNextPage ?: false,
                                 progressBarState = ProgressBarState.Idle,
                                 isLoadingMore = false,
                                 error = null

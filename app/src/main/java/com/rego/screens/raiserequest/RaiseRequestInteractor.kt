@@ -1,4 +1,3 @@
-// app/src/main/java/com/rego/screens/raiserequest/RaiseRequestInteractor.kt
 package com.rego.screens.raiserequest
 
 import android.content.Context
@@ -11,7 +10,6 @@ import com.rego.util.UserPreferences
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import java.io.File
-import androidx.core.net.toUri
 import com.rego.util.FileUtils
 
 class RaiseRequestInteractor(
@@ -252,6 +250,7 @@ class RaiseRequestInteractor(
                 return@flow
             }
 
+            // Convert URIs to Files
             tempFiles = imageUris.mapNotNull { uriString ->
                 try {
                     val uri = Uri.parse(uriString)
@@ -308,6 +307,10 @@ class RaiseRequestInteractor(
                 )
             ))
         } finally {
+            // ✅ FIXED: Cleanup temp files
+            tempFiles.forEach { file ->
+                FileUtils.deleteFile(file)
+            }
             emit(DataState.Loading(progressBarState = ProgressBarState.Idle))
         }
     }
