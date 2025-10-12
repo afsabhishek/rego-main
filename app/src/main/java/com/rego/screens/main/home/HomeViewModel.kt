@@ -142,7 +142,7 @@ class HomeViewModel(
                 "INVOICE_GENERATED"
             )
 
-            val searchStatus = status ?: defaultStatuses.joinToString(",")
+            val searchStatus = status ?: defaultStatuses[3]
 
             homeInteractor.getLeadsList(
                 status = searchStatus,
