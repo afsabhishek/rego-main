@@ -44,6 +44,7 @@ import com.rego.screens.components.*
 import com.rego.screens.raiserequest.data.*
 import com.rego.ui.theme.*
 import org.koin.androidx.compose.koinViewModel
+import java.io.File
 
 @Composable
 fun RaiseRequestScreen(
@@ -129,9 +130,11 @@ fun RaiseRequestScreenContent(
     var lastImageSource by remember { mutableStateOf<String?>(null) }
 
     fun createTempImageUri(context: Context): Uri {
-        val imageFileName = "temp_image_${System.currentTimeMillis()}.jpg"
-        val storageDir = context.getExternalFilesDir("Pictures") ?: context.filesDir
-        val tempFile = java.io.File(storageDir, imageFileName)
+        val imageFileName = "rego_image_${System.currentTimeMillis()}.jpg"
+
+        // Use cache directory instead of external files
+        val storageDir = context.cacheDir
+        val tempFile = File(storageDir, imageFileName)
 
         return androidx.core.content.FileProvider.getUriForFile(
             context,
@@ -144,6 +147,7 @@ fun RaiseRequestScreenContent(
         contract = ActivityResultContracts.GetContent(),
     ) { uri: Uri? ->
         uri?.let {
+            println("🖼️ Gallery image selected: $it")
             val newImages = state.images + it.toString()
             onFieldChange("images", newImages)
         }
@@ -154,9 +158,12 @@ fun RaiseRequestScreenContent(
     ) { success ->
         if (success) {
             tempImageUriRemember.value?.let { uri ->
+                println("📸 Camera image captured: $uri")
                 val newImages = state.images + uri.toString()
                 onFieldChange("images", newImages)
             }
+        } else {
+            println("❌ Camera capture failed or cancelled")
         }
     }
 
@@ -371,7 +378,11 @@ fun RaiseRequestScreenContent(
         DropdownField(
             label = "",
             value = state.selectedVehicleVariant?.variant ?: "",
-            onValueChange = { /* Handle through selection */ },
+            onValueChange = { selectedVariantName ->
+                // Find the full VehicleVariant object by name
+                val variant = state.vehicleVariants.find { it.variant == selectedVariantName }
+                variant?.let { onVehicleVariantSelect(it) }  // ✅ Call the callback with full object
+            },
             onDropdownExpand = {
                 if (state.selectedFuelType.isNotBlank()) {
                     vehicleVariantExpanded = true
@@ -493,7 +504,11 @@ fun RaiseRequestScreenContent(
         DropdownField(
             label = "",
             value = state.selectedWorkshopDealer?.dealerName ?: "",
-            onValueChange = { /* Handle through selection */ },
+            onValueChange = { selectedDealerName ->
+                // Find the full WorkshopDealer object by name
+                val dealer = state.workshopDealers.find { it.dealerName == selectedDealerName }
+                dealer?.let { onWorkshopDealerSelect(it) }  // ✅ Call the callback with full object
+            },
             onDropdownExpand = {
                 if (state.selectedWorkshopLocation.isNotBlank()) {
                     workshopDealerExpanded = true

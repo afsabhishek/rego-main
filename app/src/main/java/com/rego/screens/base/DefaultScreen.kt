@@ -6,9 +6,16 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.pullToRefresh
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -24,10 +31,6 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 
-/**
- * Default screen will handle your progressbar,
- * error state screens and click on the error state button
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DefaultScreenUI(
@@ -42,18 +45,25 @@ fun DefaultScreenUI(
     onBackButtonClicked: () -> Unit = {},
     content: @Composable (PaddingValues) -> Unit,
 ) {
-
     val refreshState = rememberPullToRefreshState()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // ✅ Add error dialog state
+    val showErrorDialog = remember { mutableStateOf(false) }
+    val errorDialogTitle = remember { mutableStateOf("") }
+    val errorDialogMessage = remember { mutableStateOf("") }
 
     val errorQueue = remember {
         mutableStateOf<Queue<UIComponent>>(Queue(mutableListOf()))
     }
 
-
     Scaffold(
         modifier = Modifier
-            .fillMaxSize(1f)
-            .background(Color.White)
+            .fillMaxSize()
+            .background(Color.White),
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState)
+        }
     ) {
         val bottomPadding = if (isBottomBarInScreen) 80.dp else it.calculateBottomPadding()
         Box(
@@ -79,60 +89,59 @@ fun DefaultScreenUI(
                 }
             }
 
-            // process the queue
-            if (!errorQueue.value.isEmpty()) {
-                errorQueue.value.peek()?.let { uiComponent ->
-                    if (uiComponent is UIComponent.Dialog) {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            /*GenericDialog(
-                                title = uiComponent.title,
-                                description = uiComponent.message,
-                                onRemoveHeadFromQueue = { errorQueue.removeHeadMessage() }
-                            )*/
+            // ✅ Process error queue
+            LaunchedEffect(errors) {
+                errors.collect { uiComponent ->
+                    when (uiComponent) {
+                        is UIComponent.Dialog -> {
+                            errorDialogTitle.value = uiComponent.title
+                            errorDialogMessage.value = uiComponent.message
+                            showErrorDialog.value = true
                         }
-                    }
-                    if (uiComponent is UIComponent.Snackbar) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(bottom = 10.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            /*ShowSnackBar(
+                        is UIComponent.Snackbar -> {
+                            snackbarHostState.showSnackbar(
                                 message = uiComponent.message,
-                                snackBarVisibleState = true,
-                                onDismiss = { errorQueue.removeHeadMessage() },
-                                modifier = Modifier.align(Alignment.BottomCenter)
-                            )*/
+                                actionLabel = uiComponent.buttonText,
+                                duration = SnackbarDuration.Short
+                            )
                         }
+                        is UIComponent.Toast -> {
+                            snackbarHostState.showSnackbar(
+                                message = uiComponent.message,
+                                duration = SnackbarDuration.Short
+                            )
+                        }
+                        is UIComponent.ErrorData -> {
+                            errorDialogTitle.value = uiComponent.title
+                            errorDialogMessage.value = uiComponent.message
+                            showErrorDialog.value = true
+                        }
+                        else -> {}
                     }
-                    /*if (uiComponent is UIComponent.EmptyData) {
-                        EmptyScreen(uiComponent.buttonText) {
-                            errorQueue.removeHeadMessage()
-                            onEmptyStateButtonClick()
-                        }
-                    }*/
                 }
             }
 
+            // ✅ Show error dialog
+            if (showErrorDialog.value) {
+                AlertDialog(
+                    onDismissRequest = { showErrorDialog.value = false },
+                    title = { Text(text = errorDialogTitle.value) },
+                    text = { Text(text = errorDialogMessage.value) },
+                    confirmButton = {
+                        TextButton(onClick = { showErrorDialog.value = false }) {
+                            Text("OK")
+                        }
+                    }
+                )
+            }
+
             if (networkState == NetworkState.Failed && progressBarState == ProgressBarState.Idle) {
-                /* Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                     FailedNetworkScreen(onTryAgain = onTryAgain)
-                 }*/
+                // Network error screen
             }
 
             if (progressBarState is ProgressBarState.Loading) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
-                }
-            }
-
-            LaunchedEffect(errors) {
-                errors.collect { errors ->
-                    errorQueue.appendToMessageQueue(errors)
                 }
             }
 
@@ -147,16 +156,14 @@ fun DefaultScreenUI(
     }
 }
 
-
+// Helper extensions
 private fun MutableState<Queue<UIComponent>>.appendToMessageQueue(uiComponent: UIComponent) {
     if (uiComponent is UIComponent.None) {
         return
     }
-
     val queue = this.value
     queue.add(uiComponent)
-
-    this.value = Queue(mutableListOf()) // force to recompose
+    this.value = Queue(mutableListOf())
     this.value = queue
 }
 
@@ -165,8 +172,8 @@ private fun MutableState<Queue<UIComponent>>.removeHeadMessage() {
         return
     }
     val queue = this.value
-    queue.remove() // can throw exception if empty
-    this.value = Queue(mutableListOf()) // force to recompose
+    queue.remove()
+    this.value = Queue(mutableListOf())
     this.value = queue
 }
 
@@ -176,9 +183,8 @@ private fun MutableState<Queue<UIComponent>>.clear() {
     }
     val queue = this.value
     queue.clear()
-    this.value = Queue(mutableListOf()) // force to recompose
+    this.value = Queue(mutableListOf())
 }
-
 
 @Composable
 fun <Effect : ViewSingleAction> EffectHandler(
@@ -191,16 +197,3 @@ fun <Effect : ViewSingleAction> EffectHandler(
         }
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-

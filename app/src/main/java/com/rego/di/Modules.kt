@@ -178,7 +178,8 @@ val appModule = module {
     factory {
         RaiseRequestInteractor(
             api = get(),
-            userPreferences = get()
+            userPreferences = get(),
+            context = androidContext()
         )
     }
 

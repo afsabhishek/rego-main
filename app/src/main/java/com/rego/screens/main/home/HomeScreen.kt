@@ -592,13 +592,13 @@ fun BottomNavBar(
             icon = {
                 Icon(
                     painter = painterResource(R.drawable.person),
-                    contentDescription = "Profile",
+                    contentDescription = "Account",
                     tint = if (isProfileSelected) Color00954D else Color.Gray
                 )
             },
             label = {
                 Text(
-                    text = "Profile",
+                    text = "Account",
                     color = if (isProfileSelected) Color00954D else Color.Gray,
                     style = fontMediumPoppins().copy(fontSize = 12.sp)
                 )

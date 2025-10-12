@@ -30,6 +30,13 @@ object ApiRoutes {
     const val USER_PROFILE = "/user/profile"
     const val GET_LEADS_STATS = "/leads/stats"
     const val GET_LEADS = "/leads"
+    const val VEHICLES_MAKES = "/vehicles/makes"
+    const val VEHICLES_MODELS = "/vehicles/models"
+    const val VEHICLES_VARIANTS = "/vehicles/variants"
+    const val WORKSHOPS_LOCATIONS = "/workshops/locations"
+    const val WORKSHOPS_DEALERS = "/workshops/dealers"
+    const val REFERENCE_PARTS = "/reference/parts"
+    const val LEADS = "/leads"
 }
 
 class KtorClient(

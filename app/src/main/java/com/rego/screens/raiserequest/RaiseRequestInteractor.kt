@@ -1,6 +1,7 @@
 // app/src/main/java/com/rego/screens/raiserequest/RaiseRequestInteractor.kt
 package com.rego.screens.raiserequest
 
+import android.content.Context
 import android.net.Uri
 import com.rego.screens.base.DataState
 import com.rego.screens.base.ProgressBarState
@@ -10,10 +11,13 @@ import com.rego.util.UserPreferences
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import java.io.File
+import androidx.core.net.toUri
+import com.rego.util.FileUtils
 
 class RaiseRequestInteractor(
     private val api: RaiseRequestApi,
-    private val userPreferences: UserPreferences
+    private val userPreferences: UserPreferences,
+    private val context: Context
 ) {
 
     fun getVehicleMakes(): Flow<DataState<List<String>>> = flow {
@@ -201,6 +205,7 @@ class RaiseRequestInteractor(
         request: CreateLeadRequest,
         imageUris: List<String>
     ): Flow<DataState<CreateLeadResponse.CreateLeadData>> = flow {
+        var tempFiles: List<File> = emptyList()
         try {
             emit(DataState.Loading(progressBarState = ProgressBarState.Loading))
 
@@ -217,7 +222,10 @@ class RaiseRequestInteractor(
             }
 
             // Get auth token
-            val authToken = userPreferences.getFirebaseIdToken()
+            var authToken = userPreferences.getAuthToken()
+            if (authToken.isNullOrEmpty()) {
+                authToken = userPreferences.getFirebaseIdToken()
+            }
             if (authToken.isNullOrEmpty()) {
                 emit(DataState.Error(
                     UIComponent.ErrorData(
@@ -229,16 +237,56 @@ class RaiseRequestInteractor(
                 return@flow
             }
 
-            // Convert URIs to Files
-            val imageFiles = imageUris.mapNotNull { uriString ->
+            val isBackendTokenExpired = userPreferences.isAuthTokenExpired()
+            val isFirebaseTokenExpired = userPreferences.isFirebaseTokenExpired()
+
+            if (isBackendTokenExpired && isFirebaseTokenExpired) {
+                // Token expired - user needs to login again
+                emit(DataState.Error(
+                    UIComponent.ErrorData(
+                        title = "Session Expired",
+                        message = "Your session has expired. Please login again.",
+                        buttonText = "Login"
+                    )
+                ))
+                return@flow
+            }
+
+            tempFiles = imageUris.mapNotNull { uriString ->
                 try {
-                    Uri.parse(uriString)?.path?.let { File(it) }
+                    val uri = Uri.parse(uriString)
+                    println("🖼️ Processing image: $uri")
+
+                    val file = FileUtils.getFileFromUri(context, uri)
+
+                    if (file != null && file.exists()) {
+                        println("✅ File ready: ${file.name}, size: ${file.length()} bytes")
+                        file
+                    } else {
+                        println("❌ Failed to process: $uriString")
+                        null
+                    }
                 } catch (e: Exception) {
+                    println("❌ Error processing image: ${e.message}")
+                    e.printStackTrace()
                     null
                 }
             }
 
-            val response = api.createLead(request, imageFiles, authToken)
+            // Check if we have files
+            if (tempFiles.isEmpty() && imageUris.isNotEmpty()) {
+                emit(DataState.Error(
+                    UIComponent.Snackbar(
+                        message = "Failed to process images. Please try again.",
+                        buttonText = "OK"
+                    )
+                ))
+                return@flow
+            }
+
+            println("📤 Uploading ${tempFiles.size} files")
+
+            val response = api.createLead(request, tempFiles, authToken)
 
             if (response.success && response.data != null) {
                 emit(DataState.Data(response.data))

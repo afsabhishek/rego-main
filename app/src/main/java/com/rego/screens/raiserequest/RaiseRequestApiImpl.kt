@@ -1,7 +1,15 @@
 package com.rego.screens.raiserequest
 
+import com.rego.network.ApiRoutes.LEADS
+import com.rego.network.ApiRoutes.REFERENCE_PARTS
+import com.rego.network.ApiRoutes.VEHICLES_MAKES
+import com.rego.network.ApiRoutes.VEHICLES_MODELS
+import com.rego.network.ApiRoutes.VEHICLES_VARIANTS
+import com.rego.network.ApiRoutes.WORKSHOPS_DEALERS
+import com.rego.network.ApiRoutes.WORKSHOPS_LOCATIONS
 import com.rego.network.KtorClient
 import com.rego.network.NetworkConfig
+import com.rego.network.NetworkConfig.BASE_URL
 import com.rego.screens.raiserequest.data.*
 import io.ktor.client.call.body
 import io.ktor.client.request.*
@@ -12,19 +20,6 @@ import java.io.File
 class RaiseRequestApiImpl(
     private val ktorClient: KtorClient
 ) : RaiseRequestApi {
-
-    companion object {
-        private const val BASE_URL = NetworkConfig.BASE_URL
-
-        // API endpoints
-        private const val VEHICLES_MAKES = "/vehicles/makes"
-        private const val VEHICLES_MODELS = "/vehicles/models"
-        private const val VEHICLES_VARIANTS = "/vehicles/variants"
-        private const val WORKSHOPS_LOCATIONS = "/workshops/locations"
-        private const val WORKSHOPS_DEALERS = "/workshops/dealers"
-        private const val REFERENCE_PARTS = "/reference/parts"
-        private const val LEADS = "/leads"
-    }
 
     override suspend fun getVehicleMakes(): VehicleMakesResponse {
         return try {

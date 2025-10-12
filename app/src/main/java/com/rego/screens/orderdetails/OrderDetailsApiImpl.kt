@@ -21,8 +21,6 @@ class OrderDetailsApiImpl(
                 url("${NetworkConfig.BASE_URL}${ApiRoutes.GET_LEADS}")
                 header(HttpHeaders.Authorization, "Bearer $authToken")
                 parameter("leadId", leadId)
-                parameter("page", 1)
-                parameter("limit", 1)
             }
             response.body<LeadsResponse>()
         } catch (e: Exception) {
@@ -46,8 +44,6 @@ class OrderDetailsApiImpl(
                 url("${NetworkConfig.BASE_URL}${ApiRoutes.GET_LEADS}")
                 header(HttpHeaders.Authorization, "Bearer $authToken")
                 status?.let { parameter("status", it) }
-                parameter("page", page)
-                parameter("limit", limit)
             }
             response.body<LeadsResponse>()
         } catch (e: Exception) {
