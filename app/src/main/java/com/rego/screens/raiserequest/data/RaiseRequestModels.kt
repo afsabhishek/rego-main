@@ -43,11 +43,16 @@ data class WorkshopLocation(
 data class WorkshopDealer(
     @SerialName("_id")
     val id: String,
+    @SerialName("dealerId")
+    val dealerId: String? = null,
     @SerialName("dealerName")
     val dealerName: String,
     @SerialName("address")
     val address: String
-)
+) {
+    // Helper to get the correct ID for submission
+    val submissionId: String get() = dealerId ?: id
+}
 
 // Part type model
 @Serializable

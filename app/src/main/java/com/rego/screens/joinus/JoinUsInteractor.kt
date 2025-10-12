@@ -3,32 +3,32 @@ package com.rego.screens.joinus
 import com.rego.screens.base.DataState
 import com.rego.screens.base.ProgressBarState
 import com.rego.screens.base.UIComponent
-import com.rego.screens.joinus.data.InsuranceCompaniesResponse
 import com.rego.screens.joinus.data.JoinUsRequest
 import com.rego.screens.joinus.data.JoinUsResponse
+import com.rego.screens.joinus.data.RegisterReferenceResponse
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 
 class JoinUsInteractor(
     private val api: JoinUsApi
 ) {
-    fun getInsuranceCompanies(
-        page: Int = 1,
-        limit: Int = 100
-    ): Flow<DataState<InsuranceCompaniesResponse.InsuranceCompaniesData>> = flow {
+    /**
+     * Get registration reference data (insurance companies, states, cities)
+     */
+    fun getRegisterReference(): Flow<DataState<RegisterReferenceResponse.RegisterReferenceData>> = flow {
         try {
             emit(DataState.Loading(progressBarState = ProgressBarState.Loading))
 
-            val response = api.getInsuranceCompanies()
+            val response = api.getRegisterReference()
 
-            if (response.status == true && response.data != null) {
+            if (response.success && response.data != null) {
                 emit(DataState.Data(data = response.data))
             } else {
                 emit(
                     DataState.Error(
                         UIComponent.Dialog(
                             title = "Error",
-                            message = response.message ?: "Failed to load insurance companies"
+                            message = response.message ?: "Failed to load registration data"
                         )
                     )
                 )

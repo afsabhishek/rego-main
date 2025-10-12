@@ -10,9 +10,5 @@ data class InsuranceCompany(
     @SerialName("name")
     val name: String,
     @SerialName("slug")
-    val slug: String,
-    @SerialName("createdAt")
-    val createdAt: String,
-    @SerialName("updatedAt")
-    val updatedAt: String
+    val slug: String
 )

@@ -19,8 +19,9 @@ class JoinUsViewModel(
 
     override fun onTriggerEvent(event: JoinUsEvent) {
         when (event) {
-            is JoinUsEvent.LoadInsuranceCompanies -> loadInsuranceCompanies()
+            is JoinUsEvent.LoadRegisterData -> loadRegisterData()
             is JoinUsEvent.SelectInsuranceCompany -> selectInsuranceCompany(event.company)
+            is JoinUsEvent.SelectState -> selectState(event.state)
             is JoinUsEvent.SubmitRegistration -> submitRegistration(
                 name = event.name,
                 email = event.email,
@@ -30,16 +31,16 @@ class JoinUsViewModel(
                 company = event.company,
                 role = event.role
             )
-            is JoinUsEvent.RetryLoadingCompanies -> loadInsuranceCompanies()
+            is JoinUsEvent.RetryLoadingData -> loadRegisterData()
         }
     }
 
     init {
-        setEvent(JoinUsEvent.LoadInsuranceCompanies)
+        setEvent(JoinUsEvent.LoadRegisterData)
     }
 
-    private fun loadInsuranceCompanies() {
-        interactor.getInsuranceCompanies()
+    private fun loadRegisterData() {
+        interactor.getRegisterReference()
             .onEach { dataState ->
                 when (dataState) {
                     is DataState.Loading -> {
@@ -49,11 +50,15 @@ class JoinUsViewModel(
                     }
 
                     is DataState.Data -> {
-                        setState {
-                            copy(
-                                insuranceCompanies = dataState.data?.insuranceCompanies ?: emptyList(),
-                                progressBarState = ProgressBarState.Idle
-                            )
+                        dataState.data?.let { referenceData ->
+                            setState {
+                                copy(
+                                    insuranceCompanies = referenceData.insuranceCompanies,
+                                    states = referenceData.states,
+                                    stateCityMapping = referenceData.stateCityMapping,
+                                    progressBarState = ProgressBarState.Idle
+                                )
+                            }
                         }
                     }
 
@@ -80,6 +85,18 @@ class JoinUsViewModel(
 
     private fun selectInsuranceCompany(company: InsuranceCompany) {
         setState { copy(selectedCompany = company) }
+    }
+
+    private fun selectState(state: String) {
+        // When state changes, update available cities
+        val cities = this.state.value.stateCityMapping[state] ?: emptyList()
+        setState {
+            copy(
+                selectedState = state,
+                availableCities = cities,
+                selectedCity = "" // Reset city selection
+            )
+        }
     }
 
     private fun submitRegistration(

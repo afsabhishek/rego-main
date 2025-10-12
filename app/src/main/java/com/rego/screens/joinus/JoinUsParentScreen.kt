@@ -146,7 +146,12 @@ fun JoinUsParentScreen(
                     when (page) {
                         0 -> JoinUsFormScreen(
                             insuranceOptions = state.value.insuranceCompanies.map { it.name },
+                            states = state.value.states,
+                            stateCityMapping = state.value.stateCityMapping,
                             companyTypeOptions = listOf("CSM", "CR", "admin"),
+                            onStateSelected = { selectedState ->
+                                viewModel.onTriggerEvent(JoinUsEvent.SelectState(selectedState))
+                            },
                             onSubmit = { name, email, phone, city, st, insurance, companyType ->
                                 viewModel.onTriggerEvent(
                                     JoinUsEvent.SubmitRegistration(
@@ -174,6 +179,9 @@ fun JoinUsParentScreen(
 @Composable
 private fun JoinUsFormScreen(
     insuranceOptions: List<String>,
+    states: List<String>,
+    stateCityMapping: Map<String, List<String>>,
+    onStateSelected: (String) -> Unit,
     onSubmit: (
         name: String,
         email: String,
@@ -188,27 +196,40 @@ private fun JoinUsFormScreen(
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
+
+    // State/City managed for dropdowns
+    var selectedState by remember { mutableStateOf("") }
     var city by remember { mutableStateOf("") }
-    var state by remember { mutableStateOf("") }
-    var companyType by remember { mutableStateOf("") }
 
     var insuranceCompany by remember { mutableStateOf("") }
+    var companyType by remember { mutableStateOf("") }
+
+    // Dropdown expanded flags
     var isInsuranceDropdown by remember { mutableStateOf(false) }
+    var isStateDropdown by remember { mutableStateOf(false) }
+    var isCityDropdown by remember { mutableStateOf(false) }
     var isCompanyTypeDropdown by remember { mutableStateOf(false) }
 
+    // Cities available for currently selected state
+    val availableCities = stateCityMapping[selectedState].orEmpty()
 
-    // Email validation using regex
+    // Email & phone validation
     fun isValidEmail(email: String): Boolean {
         val regex = Regex("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}$")
         return regex.matches(email)
     }
-
-    // Phone validation: only digits, and 10 digits
     fun isValidPhone(phone: String): Boolean =
         phone.length == 10 && phone.all { it.isDigit() }
 
     val isFormValid =
-        name.isNotBlank() && isValidEmail(email) && isValidPhone(phone) && city.isNotBlank() && state.isNotBlank() && insuranceCompany.isNotBlank() && companyType.isNotBlank()
+        name.isNotBlank() &&
+                isValidEmail(email) &&
+                isValidPhone(phone) &&
+                city.isNotBlank() &&
+                selectedState.isNotBlank() &&
+                insuranceCompany.isNotBlank() &&
+                companyType.isNotBlank()
+
     val scrollState = rememberScrollState()
     Column(
         modifier = Modifier
@@ -234,11 +255,7 @@ private fun JoinUsFormScreen(
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(top = 8.dp, bottom = 18.dp)
         )
-        Card(
-            elevation = CardDefaults.cardElevation(
-                defaultElevation = 2.dp
-            )
-        ) {
+        Card(elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)) {
             Column(
                 Modifier
                     .fillMaxWidth()
@@ -270,27 +287,47 @@ private fun JoinUsFormScreen(
                     placeholder = "Enter Phone number",
                     keyboardType = KeyboardType.Phone
                 )
+
+                // State & City side-by-side
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    TransparentInputField(
-                        label = "City",
-                        value = city,
-                        onValueChange = { city = it },
-                        leadingIcon = R.drawable.location,
-                        placeholder = "Enter City",
-                        modifier = Modifier.weight(1f)
-                    )
-                    TransparentInputField(
-                        label = "State",
-                        value = state,
-                        onValueChange = { state = it },
-                        leadingIcon = R.drawable.location,
-                        placeholder = "Enter State",
-                        modifier = Modifier.weight(1f)
-                    )
+                    Box(modifier = Modifier.weight(1f)) {
+                        DropdownField(
+                            label = "State",
+                            value = selectedState,
+                            onValueChange = { st ->
+                                selectedState = st
+                                city = ""                 // reset city when state changes
+                                onStateSelected(st)       // notify VM to refresh cities if needed
+                            },
+                            onDropdownExpand = { isStateDropdown = true },
+                            expanded = isStateDropdown,
+                            leadingIcon = R.drawable.location,
+                            placeholder = "Select State",
+                            onDismissRequest = { isStateDropdown = false },
+                            options = states
+                        )
+                    }
+
+                    Box(modifier = Modifier.weight(1f)) {
+                        DropdownField(
+                            label = "City",
+                            value = city,
+                            onValueChange = { ct -> city = ct },
+                            onDropdownExpand = {
+                                if (selectedState.isNotBlank()) isCityDropdown = true
+                            },
+                            expanded = isCityDropdown,
+                            leadingIcon = R.drawable.location,
+                            placeholder = if (selectedState.isBlank()) "Select State first" else "Select City",
+                            onDismissRequest = { isCityDropdown = false },
+                            options = if (selectedState.isBlank()) emptyList() else availableCities
+                        )
+                    }
                 }
+
                 DropdownField(
                     label = "Insurance company",
                     value = insuranceCompany,
@@ -300,10 +337,11 @@ private fun JoinUsFormScreen(
                     leadingIcon = R.drawable.location,
                     placeholder = "Select Insurance Company",
                     onDismissRequest = { isInsuranceDropdown = false },
-                    options = insuranceOptions,
+                    options = insuranceOptions
                 )
+
                 DropdownField(
-                    label = "Company Tyoe",
+                    label = "Company Type", // fixed typo
                     value = companyType,
                     onValueChange = { companyType = it },
                     onDropdownExpand = { isCompanyTypeDropdown = true },
@@ -311,15 +349,23 @@ private fun JoinUsFormScreen(
                     leadingIcon = R.drawable.location,
                     placeholder = "Select Company Type",
                     onDismissRequest = { isCompanyTypeDropdown = false },
-                    options = companyTypeOptions,
+                    options = companyTypeOptions
                 )
             }
-
         }
+
         Spacer(modifier = Modifier.height(40.dp))
         RegoButton(
             onClick = {
-                onSubmit(name, email, phone, city, state, insuranceCompany, companyType)
+                onSubmit(
+                    name,
+                    email,
+                    phone,
+                    city,
+                    selectedState,
+                    insuranceCompany,
+                    companyType
+                )
             },
             text = "Submit",
             enabled = isFormValid

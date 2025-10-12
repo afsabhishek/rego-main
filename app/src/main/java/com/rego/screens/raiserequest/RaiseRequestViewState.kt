@@ -78,7 +78,8 @@ data class RaiseRequestViewState(
 
     // Get the selected workshop ID for API
     val selectedWorkshopId: String
-        get() = selectedWorkshopDealer?.id ?: ""
+        get() = selectedWorkshopDealer?.submissionId ?: ""
+
 
     // Get the part type slug for API
     val selectedPartTypeSlug: String
