@@ -321,7 +321,7 @@ fun RaiseRequestScreenContent(
             onValueChange = { onFieldChange("selectedVehicleMake", it) },
             onDropdownExpand = { vehicleMakeExpanded = true },
             expanded = vehicleMakeExpanded,
-            options = state.vehicleMakes.map { it.make },
+            options = state.vehicleMakes.map { it },
             placeholder = "Select Car Make",
             onDismissRequest = { vehicleMakeExpanded = false },
             labelComposable = { LabelWithAsterisk("Car Make*") }

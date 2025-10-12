@@ -16,7 +16,7 @@ class RaiseRequestInteractor(
     private val userPreferences: UserPreferences
 ) {
 
-    fun getVehicleMakes(): Flow<DataState<List<VehicleMake>>> = flow {
+    fun getVehicleMakes(): Flow<DataState<List<String>>> = flow {
         try {
             emit(DataState.Loading(progressBarState = ProgressBarState.Loading))
             val response = api.getVehicleMakes()

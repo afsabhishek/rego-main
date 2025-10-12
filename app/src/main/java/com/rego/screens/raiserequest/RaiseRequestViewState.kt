@@ -15,7 +15,7 @@ data class RaiseRequestViewState(
     val selectedPartType: PartTypeReference? = null,
 
     // Vehicle Selection
-    val vehicleMakes: List<VehicleMake> = emptyList(),
+    val vehicleMakes: List<String> = emptyList(),
     val selectedVehicleMake: String = "",
     val vehicleModels: List<VehicleModel> = emptyList(),
     val selectedVehicleModel: String = "",

@@ -3,12 +3,12 @@ package com.rego.screens.raiserequest.data
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
-// Vehicle related models
+/*// Vehicle related models
 @Serializable
 data class VehicleMake(
     @SerialName("make")
     val make: String
-)
+)*/
 
 @Serializable
 data class VehicleModel(
@@ -116,7 +116,7 @@ data class VehicleMakesResponse(
     @SerialName("success")
     val success: Boolean,
     @SerialName("data")
-    val data: List<VehicleMake>? = null,
+    val data: List<String>? = null,
     @SerialName("message")
     val message: String? = null
 )
