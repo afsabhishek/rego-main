@@ -146,7 +146,7 @@ class RaiseRequestApiImpl(
                     append("registrationNumber", request.registrationNumber)
                     append("makeYear", request.makeYear.toString())
                     append("inventoryPickUp", request.inventoryPickUp.toString())
-                    append("workshopId", request.workshopId)
+                    append("dealerId", request.workshopId)
                     append("advisorName", request.advisorName)
                     append("advisorContact", request.advisorContact)
                     append("policyType", request.policyType)
