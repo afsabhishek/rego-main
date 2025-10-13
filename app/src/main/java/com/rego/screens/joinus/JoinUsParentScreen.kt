@@ -49,6 +49,7 @@ import com.rego.screens.base.UIComponent
 import com.rego.screens.components.DropdownField
 import com.rego.screens.components.RegoButton
 import com.rego.screens.components.TransparentInputField
+import com.rego.screens.joinus.data.InsuranceCompany
 import com.rego.ui.theme.Color00954D
 import com.rego.ui.theme.Color1A1A1A
 import com.rego.ui.theme.Color1A1A1A_60
@@ -71,6 +72,8 @@ fun JoinUsParentScreen(
     var showErrorScreen by remember { mutableStateOf(false) }
     var errorScreenData by remember { mutableStateOf<UIComponent.ErrorData?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
+    var selectedCompanyObject by remember { mutableStateOf<InsuranceCompany?>(null) }
+
 
     LaunchedEffect(Unit) {
         viewModel.action.collect { action ->
@@ -152,6 +155,10 @@ fun JoinUsParentScreen(
                             onStateSelected = { selectedState ->
                                 viewModel.onTriggerEvent(JoinUsEvent.SelectState(selectedState))
                             },
+                            onInsuranceCompanySelected = { companyName ->
+                                // Find the company object by name
+                                selectedCompanyObject = state.value.insuranceCompanies.find { it.name == companyName }
+                            },
                             onSubmit = { name, email, phone, city, st, insurance, companyType ->
                                 viewModel.onTriggerEvent(
                                     JoinUsEvent.SubmitRegistration(
@@ -182,6 +189,7 @@ private fun JoinUsFormScreen(
     states: List<String>,
     stateCityMapping: Map<String, List<String>>,
     onStateSelected: (String) -> Unit,
+    onInsuranceCompanySelected: (String) -> Unit = {},
     onSubmit: (
         name: String,
         email: String,
@@ -331,7 +339,10 @@ private fun JoinUsFormScreen(
                 DropdownField(
                     label = "Insurance company",
                     value = insuranceCompany,
-                    onValueChange = { insuranceCompany = it },
+                    onValueChange = {
+                        insuranceCompany = it
+                        onInsuranceCompanySelected(it)
+                    },
                     onDropdownExpand = { isInsuranceDropdown = true },
                     expanded = isInsuranceDropdown,
                     leadingIcon = R.drawable.location,
