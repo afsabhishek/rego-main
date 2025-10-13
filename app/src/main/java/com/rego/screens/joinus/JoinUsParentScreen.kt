@@ -18,6 +18,7 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -49,18 +50,20 @@ import com.rego.screens.base.UIComponent
 import com.rego.screens.components.DropdownField
 import com.rego.screens.components.RegoButton
 import com.rego.screens.components.TransparentInputField
-import com.rego.screens.joinus.data.InsuranceCompany
 import com.rego.ui.theme.Color00954D
 import com.rego.ui.theme.Color1A1A1A
+import com.rego.ui.theme.Color1A1A1A_16
 import com.rego.ui.theme.Color1A1A1A_60
+import com.rego.ui.theme.Color1A1A1A_90
 import com.rego.ui.theme.fontSemiBoldMontserrat
+import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun JoinUsParentScreen(
     onNavigateBack: () -> Unit,
     onRegistrationSuccess: (userId: String?, firebaseUid: String?) -> Unit
-){
+) {
     val pagerState = rememberPagerState(pageCount = { 2 })
     val coroutineScope = rememberCoroutineScope()
     val viewModel: JoinUsViewModel = koinViewModel()
@@ -72,8 +75,6 @@ fun JoinUsParentScreen(
     var showErrorScreen by remember { mutableStateOf(false) }
     var errorScreenData by remember { mutableStateOf<UIComponent.ErrorData?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
-    var selectedCompanyObject by remember { mutableStateOf<InsuranceCompany?>(null) }
-
 
     LaunchedEffect(Unit) {
         viewModel.action.collect { action ->
@@ -94,11 +95,15 @@ fun JoinUsParentScreen(
                     )
                 }
                 is JoinUsAction.RegistrationSuccess -> {
-                    onRegistrationSuccess(action.data.userId, action.data.firebaseUid)
+                    // Navigate to success page
+                    coroutineScope.launch {
+                        pagerState.animateScrollToPage(1)
+                    }
                 }
             }
         }
     }
+
     Box(
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -125,7 +130,16 @@ fun JoinUsParentScreen(
                             .height(28.dp)
                             .padding(4.dp)
                             .padding(end = 4.dp)
-                            .clickable { onNavigateBack() }
+                            .clickable {
+                                if (pagerState.currentPage == 1) {
+                                    // If on success page, go back to form
+                                    coroutineScope.launch {
+                                        pagerState.animateScrollToPage(0)
+                                    }
+                                } else {
+                                    onNavigateBack()
+                                }
+                            }
                     )
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(
@@ -155,10 +169,6 @@ fun JoinUsParentScreen(
                             onStateSelected = { selectedState ->
                                 viewModel.onTriggerEvent(JoinUsEvent.SelectState(selectedState))
                             },
-                            onInsuranceCompanySelected = { companyName ->
-                                // Find the company object by name
-                                selectedCompanyObject = state.value.insuranceCompanies.find { it.name == companyName }
-                            },
                             onSubmit = { name, email, phone, city, st, insurance, companyType ->
                                 viewModel.onTriggerEvent(
                                     JoinUsEvent.SubmitRegistration(
@@ -174,7 +184,12 @@ fun JoinUsParentScreen(
                             }
                         )
 
-                        1 -> JoinUsSuccessScreen(onOkay = onRegistrationSuccess)
+                        1 -> JoinUsSuccessScreen(
+                            onOkay = {
+                                // Navigate back to login screen
+                                onNavigateBack()
+                            }
+                        )
                     }
                 }
                 Spacer(modifier = Modifier.height(16.dp))
@@ -189,7 +204,6 @@ private fun JoinUsFormScreen(
     states: List<String>,
     stateCityMapping: Map<String, List<String>>,
     onStateSelected: (String) -> Unit,
-    onInsuranceCompanySelected: (String) -> Unit = {},
     onSubmit: (
         name: String,
         email: String,
@@ -307,8 +321,8 @@ private fun JoinUsFormScreen(
                             value = selectedState,
                             onValueChange = { st ->
                                 selectedState = st
-                                city = ""                 // reset city when state changes
-                                onStateSelected(st)       // notify VM to refresh cities if needed
+                                city = ""
+                                onStateSelected(st)
                             },
                             onDropdownExpand = { isStateDropdown = true },
                             expanded = isStateDropdown,
@@ -329,7 +343,7 @@ private fun JoinUsFormScreen(
                             },
                             expanded = isCityDropdown,
                             leadingIcon = R.drawable.location,
-                            placeholder = if (selectedState.isBlank()) "Select State first" else "Select City",
+                            placeholder = if (selectedState.isBlank()) "Select State" else "Select City",
                             onDismissRequest = { isCityDropdown = false },
                             options = if (selectedState.isBlank()) emptyList() else availableCities
                         )
@@ -337,30 +351,27 @@ private fun JoinUsFormScreen(
                 }
 
                 DropdownField(
+                    label = "Surveyor Type",
+                    value = companyType,
+                    onValueChange = { companyType = it },
+                    onDropdownExpand = { isCompanyTypeDropdown = true },
+                    expanded = isCompanyTypeDropdown,
+                    leadingIcon = R.drawable.location,
+                    placeholder = "Select Surveyor Type",
+                    onDismissRequest = { isCompanyTypeDropdown = false },
+                    options = companyTypeOptions
+                )
+
+                DropdownField(
                     label = "Insurance company",
                     value = insuranceCompany,
-                    onValueChange = {
-                        insuranceCompany = it
-                        onInsuranceCompanySelected(it)
-                    },
+                    onValueChange = { insuranceCompany = it },
                     onDropdownExpand = { isInsuranceDropdown = true },
                     expanded = isInsuranceDropdown,
                     leadingIcon = R.drawable.location,
                     placeholder = "Select Insurance Company",
                     onDismissRequest = { isInsuranceDropdown = false },
                     options = insuranceOptions
-                )
-
-                DropdownField(
-                    label = "Company Type", // fixed typo
-                    value = companyType,
-                    onValueChange = { companyType = it },
-                    onDropdownExpand = { isCompanyTypeDropdown = true },
-                    expanded = isCompanyTypeDropdown,
-                    leadingIcon = R.drawable.location,
-                    placeholder = "Select Company Type",
-                    onDismissRequest = { isCompanyTypeDropdown = false },
-                    options = companyTypeOptions
                 )
             }
         }
@@ -381,12 +392,13 @@ private fun JoinUsFormScreen(
             text = "Submit",
             enabled = isFormValid
         )
+        Spacer(modifier = Modifier.height(20.dp))
     }
 }
 
 
 @Composable
-private fun JoinUsSuccessScreen(onOkay: (String?, String?) -> Unit) {
+private fun JoinUsSuccessScreen(onOkay: () -> Unit) {
     Column(
         Modifier
             .fillMaxSize()
@@ -416,7 +428,7 @@ private fun JoinUsSuccessScreen(onOkay: (String?, String?) -> Unit) {
             textAlign = TextAlign.Center
         )
         Text(
-            text = "Thank you for your interest. We will\nreach out to you within the next 24 hours.",
+            text = "Thank you for your interest. We will\nreach out to you within the next 24 hours.\n\nPlease login to continue.",
             color = Color1A1A1A_60(),
             fontSize = 12.sp,
             modifier = Modifier.padding(vertical = 10.dp),
@@ -424,8 +436,8 @@ private fun JoinUsSuccessScreen(onOkay: (String?, String?) -> Unit) {
         )
         Spacer(modifier = Modifier.height(56.dp))
         RegoButton(
-            onClick = onOkay as () -> Unit,
-            text = "Okay"
+            onClick = onOkay,
+            text = "Go to Login"
         )
     }
 }

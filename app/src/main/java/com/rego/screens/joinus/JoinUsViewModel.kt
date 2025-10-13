@@ -148,7 +148,6 @@ class JoinUsViewModel(
                             )
                         }
                         dataState.data?.let { data ->
-                            // Navigate to home after successful registration
                             setAction { JoinUsAction.RegistrationSuccess(data) }
                         }
                     }

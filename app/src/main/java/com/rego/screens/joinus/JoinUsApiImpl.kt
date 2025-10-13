@@ -9,10 +9,12 @@ import com.rego.screens.joinus.data.JoinUsResponse
 import com.rego.screens.joinus.data.RegisterReferenceResponse
 import io.ktor.client.call.body
 import io.ktor.client.request.get
+import io.ktor.client.request.headers
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.request.url
 import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
 
 class JoinUsApiImpl(private val ktorClient: KtorClient) : JoinUsApi {
@@ -23,6 +25,10 @@ class JoinUsApiImpl(private val ktorClient: KtorClient) : JoinUsApi {
 
             val response = ktorClient.client.get {
                 url("${NetworkConfig.BASE_URL}${ApiRoutes.INSURANCE_COMPANIES}")
+                // Explicitly remove auth header for this public endpoint
+                headers {
+                    remove(HttpHeaders.Authorization)
+                }
             }
 
             val result = response.body<RegisterReferenceResponse>()
@@ -60,6 +66,10 @@ class JoinUsApiImpl(private val ktorClient: KtorClient) : JoinUsApi {
             val response = ktorClient.client.post {
                 url("${NetworkConfig.BASE_URL}${ApiRoutes.JOIN_US_REGISTER}")
                 contentType(ContentType.Application.Json)
+                // ✅ Explicitly remove auth header for signup
+                headers {
+                    remove(HttpHeaders.Authorization)
+                }
                 setBody(request)
             }
 

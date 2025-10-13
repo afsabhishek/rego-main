@@ -69,13 +69,8 @@ fun AppNavHost() {
                     navController.popBackStack()
                 },
                 onRegistrationSuccess = { userId, firebaseUid ->
-                    // Navigate to home after successful signup
-                    val route = if (userId != null && firebaseUid != null) {
-                        Destinations.Home.createRoute(userId, firebaseUid)
-                    } else {
-                        Destinations.Home.route
-                    }
-                    navController.navigate(route) {
+                    // ✅ After signup success, go back to login screen
+                    navController.navigate(Destinations.LoginOptions.route) {
                         popUpTo(Destinations.LoginOptions.route) { inclusive = true }
                     }
                 }
