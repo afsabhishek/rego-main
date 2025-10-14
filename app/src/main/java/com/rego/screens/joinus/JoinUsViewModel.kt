@@ -63,18 +63,9 @@ class JoinUsViewModel(
                     }
 
                     is DataState.Error -> {
-                        when (dataState.uiComponent) {
-                            is UIComponent.Dialog -> {
-                                setAction { JoinUsAction.ShowDialog(dataState.uiComponent) }
-                            }
-                            is UIComponent.ErrorData -> {
-                                setAction { JoinUsAction.ShowErrorScreen(dataState.uiComponent) }
-                            }
-                            is UIComponent.Snackbar -> {
-                                setAction { JoinUsAction.ShowSnackbar(dataState.uiComponent) }
-                            }
-                            else -> {}
-                        }
+                        setState { copy(progressBarState = ProgressBarState.Idle) }
+                        // ✅ FIX: Call setError instead of setAction
+                        setError { dataState.uiComponent }
                     }
 
                     else -> {}
@@ -108,14 +99,12 @@ class JoinUsViewModel(
         company: String,
         role: String
     ) {
-
+        // Validate company is selected
         if (company.isNullOrBlank()) {
-            setAction {
-                JoinUsAction.ShowSnackbar(
-                    UIComponent.Snackbar(
-                        message = "Please select an insurance company",
-                        buttonText = "OK"
-                    )
+            setError {
+                UIComponent.Snackbar(
+                    message = "Please select an insurance company",
+                    buttonText = "OK"
                 )
             }
             return
@@ -153,18 +142,9 @@ class JoinUsViewModel(
                     }
 
                     is DataState.Error -> {
-                        when (dataState.uiComponent) {
-                            is UIComponent.Dialog -> {
-                                setAction { JoinUsAction.ShowDialog(dataState.uiComponent) }
-                            }
-                            is UIComponent.ErrorData -> {
-                                setAction { JoinUsAction.ShowErrorScreen(dataState.uiComponent) }
-                            }
-                            is UIComponent.Snackbar -> {
-                                setAction { JoinUsAction.ShowSnackbar(dataState.uiComponent) }
-                            }
-                            else -> {}
-                        }
+                        setState { copy(progressBarState = ProgressBarState.Idle) }
+                        // ✅ FIX: Call setError instead of setAction
+                        setError { dataState.uiComponent }
                     }
 
                     else -> {}

@@ -23,8 +23,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -46,15 +44,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.rego.R
 import com.rego.screens.base.DefaultScreenUI
-import com.rego.screens.base.UIComponent
 import com.rego.screens.components.DropdownField
 import com.rego.screens.components.RegoButton
 import com.rego.screens.components.TransparentInputField
 import com.rego.ui.theme.Color00954D
 import com.rego.ui.theme.Color1A1A1A
-import com.rego.ui.theme.Color1A1A1A_16
 import com.rego.ui.theme.Color1A1A1A_60
-import com.rego.ui.theme.Color1A1A1A_90
 import com.rego.ui.theme.fontSemiBoldMontserrat
 import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
@@ -69,31 +64,10 @@ fun JoinUsParentScreen(
     val viewModel: JoinUsViewModel = koinViewModel()
     val state = viewModel.state.collectAsState()
 
-    var showErrorDialog by remember { mutableStateOf(false) }
-    var errorDialogData by remember { mutableStateOf<UIComponent.Dialog?>(null) }
-
-    var showErrorScreen by remember { mutableStateOf(false) }
-    var errorScreenData by remember { mutableStateOf<UIComponent.ErrorData?>(null) }
-    val snackbarHostState = remember { SnackbarHostState() }
-
+    // Only handle the success action - errors are handled by DefaultScreenUI
     LaunchedEffect(Unit) {
         viewModel.action.collect { action ->
             when (action) {
-                is JoinUsAction.ShowDialog -> {
-                    errorDialogData = action.uiComponent
-                    showErrorDialog = true
-                }
-                is JoinUsAction.ShowErrorScreen -> {
-                    errorScreenData = action.uiComponent
-                    showErrorScreen = true
-                }
-                is JoinUsAction.ShowSnackbar -> {
-                    snackbarHostState.showSnackbar(
-                        message = action.uiComponent.message,
-                        actionLabel = action.uiComponent.buttonText,
-                        duration = SnackbarDuration.Short
-                    )
-                }
                 is JoinUsAction.RegistrationSuccess -> {
                     // Navigate to success page
                     coroutineScope.launch {
@@ -107,7 +81,11 @@ fun JoinUsParentScreen(
     Box(
         modifier = Modifier.fillMaxWidth()
     ) {
-        DefaultScreenUI(progressBarState = state.value.progressBarState) { paddingValues ->
+        // Pass errors to DefaultScreenUI - it will handle displaying them
+        DefaultScreenUI(
+            progressBarState = state.value.progressBarState,
+            errors = viewModel.errors
+        ) { paddingValues ->
             Column(
                 Modifier
                     .fillMaxSize()
@@ -395,7 +373,6 @@ private fun JoinUsFormScreen(
         Spacer(modifier = Modifier.height(20.dp))
     }
 }
-
 
 @Composable
 private fun JoinUsSuccessScreen(onOkay: () -> Unit) {
