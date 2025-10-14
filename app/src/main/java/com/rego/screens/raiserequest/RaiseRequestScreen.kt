@@ -596,9 +596,7 @@ fun RaiseRequestScreenContent(
             label = "",
             value = state.claimNumber,
             onValueChange = {
-                if (it.all { char -> char.isDigit() }) {
-                    onFieldChange("claimNumber", it)
-                }
+                onFieldChange("claimNumber", it)
             },
             placeholder = "Enter Claim Number",
             keyboardType = KeyboardType.Number,

@@ -49,7 +49,7 @@ fun TransparentInputField(
                     tint = Color1A1A1A_60(),
                     modifier = Modifier.size(16.dp)
                 )
-                Spacer(modifier = Modifier.width(5.dp))
+                Spacer(modifier = Modifier.width(12.dp))
             }
             if (labelComposable != null) {
                 labelComposable()
@@ -62,7 +62,7 @@ fun TransparentInputField(
                 )
             }
         }
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(14.dp))
         BasicTextField(
             value = value,
             modifier = Modifier.height(40.dp),
