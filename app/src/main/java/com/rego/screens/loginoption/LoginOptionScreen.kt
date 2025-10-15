@@ -39,7 +39,9 @@ import com.rego.screens.components.RegoButton
 import org.koin.compose.viewmodel.koinViewModel
 import androidx.compose.ui.platform.LocalContext
 import android.widget.Toast
+import androidx.compose.ui.text.font.FontFamily
 import com.rego.ui.theme.NativeAndroidBaseArchitectureTheme
+import com.rego.ui.theme.fontLightPoppins
 
 @Composable
 fun LoginOptionScreen(
@@ -101,8 +103,8 @@ fun LoginOptionScreen(
                 Text(
                     text = "Join our exclusive Insurance\npartner network!",
                     color = Color.White,
-                    fontSize = 18.sp,
                     fontWeight = FontWeight.Medium,
+                    style = fontLightPoppins().copy(fontSize = 18.sp),
                     textAlign = TextAlign.Center,
                     lineHeight = 24.sp,
                     modifier = Modifier.padding(top = 12.dp, bottom = 16.dp)
@@ -127,7 +129,7 @@ fun LoginOptionScreen(
                     Text(
                         text = "Join Us",
                         color = Color.White,
-                        fontSize = 16.sp,
+                        style = fontLightPoppins().copy(fontSize = 16.sp),
                         fontWeight = FontWeight.SemiBold
                     )
                 }

@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.rego.ui.theme.Color00954D
 import com.rego.ui.theme.NativeAndroidBaseArchitectureTheme
+import com.rego.ui.theme.fontLightPoppins
 
 @Composable
 fun RegoButton(onClick: () -> Unit, text: String, enabled: Boolean = true, height: Dp = 44.dp) {
@@ -34,7 +35,7 @@ fun RegoButton(onClick: () -> Unit, text: String, enabled: Boolean = true, heigh
         Text(
             text = text,
             color = Color.White,
-            fontSize = 16.sp,
+            style = fontLightPoppins().copy(fontSize = 16.sp),
             fontWeight = FontWeight.SemiBold
         )
     }
