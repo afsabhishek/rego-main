@@ -75,17 +75,6 @@ class JoinUsInteractor(
 
             if (response.status == true && response.data != null) {
                 emit(DataState.Data(data = response.data))
-                // Show success message
-                if (response.data!!.message.isNotEmpty()) {
-                    emit(
-                        DataState.Error(
-                            UIComponent.Snackbar(
-                                message = response.data!!.message,
-                                buttonText = "OK"
-                            )
-                        )
-                    )
-                }
             } else {
                 emit(
                     DataState.Error(
