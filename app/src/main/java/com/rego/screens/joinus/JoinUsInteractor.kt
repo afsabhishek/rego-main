@@ -54,7 +54,7 @@ class JoinUsInteractor(
         request: JoinUsRequest
     ): Flow<DataState<JoinUsResponse.JoinUsData>> = flow {
         try {
-            // Validate request before sending
+            // ✅ Updated validation to handle nullable company
             val validationError = validateJoinUsRequest(request)
             if (validationError != null) {
                 emit(
@@ -122,8 +122,9 @@ class JoinUsInteractor(
             !isValidPhoneNumber(request.phoneNumber) -> "Invalid phone number. Must be 10 digits"
             request.city.isBlank() -> "City is required"
             request.state.isBlank() -> "State is required"
-            request.insuranceCompany.isBlank() -> "Insurance company is required"
-            request.role.isBlank() -> "Role is required"
+            request.role.isBlank() -> "Surveyor type is required"
+            // ✅ Only validate insurance company if role is "Company"
+            request.role == "Company" && request.insuranceCompany.isNullOrBlank() -> "Insurance company is required for Company type"
             else -> null
         }
     }

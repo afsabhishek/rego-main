@@ -1,3 +1,4 @@
+// app/src/main/java/com/rego/screens/joinus/JoinUsParentScreen.kt
 package com.rego.screens.joinus
 
 import androidx.compose.foundation.background
@@ -64,12 +65,10 @@ fun JoinUsParentScreen(
     val viewModel: JoinUsViewModel = koinViewModel()
     val state = viewModel.state.collectAsState()
 
-    // Only handle the success action - errors are handled by DefaultScreenUI
     LaunchedEffect(Unit) {
         viewModel.action.collect { action ->
             when (action) {
                 is JoinUsAction.RegistrationSuccess -> {
-                    // Navigate to success page
                     coroutineScope.launch {
                         pagerState.animateScrollToPage(1)
                     }
@@ -81,7 +80,6 @@ fun JoinUsParentScreen(
     Box(
         modifier = Modifier.fillMaxWidth()
     ) {
-        // Pass errors to DefaultScreenUI - it will handle displaying them
         DefaultScreenUI(
             progressBarState = state.value.progressBarState,
             errors = viewModel.errors
@@ -110,7 +108,6 @@ fun JoinUsParentScreen(
                             .padding(end = 4.dp)
                             .clickable {
                                 if (pagerState.currentPage == 1) {
-                                    // If on success page, go back to form
                                     coroutineScope.launch {
                                         pagerState.animateScrollToPage(0)
                                     }
@@ -143,11 +140,15 @@ fun JoinUsParentScreen(
                             insuranceOptions = state.value.insuranceCompanies.map { it.name },
                             states = state.value.states,
                             stateCityMapping = state.value.stateCityMapping,
-                            companyTypeOptions = listOf("CSM", "CR", "admin"),
+                            surveyorTypeOptions = listOf("Company", "External"),
+                            selectedSurveyorType = state.value.selectedSurveyorType,
                             onStateSelected = { selectedState ->
                                 viewModel.onTriggerEvent(JoinUsEvent.SelectState(selectedState))
                             },
-                            onSubmit = { name, email, phone, city, st, insurance, companyType ->
+                            onSurveyorTypeSelected = { surveyorType ->
+                                viewModel.onTriggerEvent(JoinUsEvent.SelectSurveyorType(surveyorType))
+                            },
+                            onSubmit = { name, email, phone, city, st, insurance, role ->
                                 viewModel.onTriggerEvent(
                                     JoinUsEvent.SubmitRegistration(
                                         name = name,
@@ -156,7 +157,7 @@ fun JoinUsParentScreen(
                                         city = city,
                                         state = st,
                                         company = insurance,
-                                        role = companyType
+                                        role = role
                                     )
                                 )
                             }
@@ -164,7 +165,6 @@ fun JoinUsParentScreen(
 
                         1 -> JoinUsSuccessScreen(
                             onOkay = {
-                                // Navigate back to login screen
                                 onNavigateBack()
                             }
                         )
@@ -181,7 +181,10 @@ private fun JoinUsFormScreen(
     insuranceOptions: List<String>,
     states: List<String>,
     stateCityMapping: Map<String, List<String>>,
+    surveyorTypeOptions: List<String>,
+    selectedSurveyorType: String,
     onStateSelected: (String) -> Unit,
+    onSurveyorTypeSelected: (String) -> Unit,
     onSubmit: (
         name: String,
         email: String,
@@ -189,31 +192,36 @@ private fun JoinUsFormScreen(
         city: String,
         state: String,
         insuranceCompany: String,
-        companyType: String
-    ) -> Unit,
-    companyTypeOptions: List<String>
+        role: String
+    ) -> Unit
 ) {
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
 
-    // State/City managed for dropdowns
     var selectedState by remember { mutableStateOf("") }
     var city by remember { mutableStateOf("") }
 
     var insuranceCompany by remember { mutableStateOf("") }
-    var companyType by remember { mutableStateOf("") }
 
     // Dropdown expanded flags
     var isInsuranceDropdown by remember { mutableStateOf(false) }
     var isStateDropdown by remember { mutableStateOf(false) }
     var isCityDropdown by remember { mutableStateOf(false) }
-    var isCompanyTypeDropdown by remember { mutableStateOf(false) }
+    var isSurveyorTypeDropdown by remember { mutableStateOf(false) }
 
-    // Cities available for currently selected state
     val availableCities = stateCityMapping[selectedState].orEmpty()
 
-    // Email & phone validation
+    // ✅ Check if insurance company should be disabled
+    val isCompanyDropdownEnabled = selectedSurveyorType == "Company"
+
+    // ✅ Reset insurance company when switching to External
+    LaunchedEffect(selectedSurveyorType) {
+        if (selectedSurveyorType == "External") {
+            insuranceCompany = ""
+        }
+    }
+
     fun isValidEmail(email: String): Boolean {
         val regex = Regex("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}$")
         return regex.matches(email)
@@ -227,8 +235,9 @@ private fun JoinUsFormScreen(
                 isValidPhone(phone) &&
                 city.isNotBlank() &&
                 selectedState.isNotBlank() &&
-                insuranceCompany.isNotBlank() &&
-                companyType.isNotBlank()
+                selectedSurveyorType.isNotBlank() &&
+                // ✅ Only require insurance company if surveyor type is "Company"
+                (selectedSurveyorType == "External" || insuranceCompany.isNotBlank())
 
     val scrollState = rememberScrollState()
     Column(
@@ -328,28 +337,36 @@ private fun JoinUsFormScreen(
                     }
                 }
 
+                // ✅ Surveyor Type Dropdown
                 DropdownField(
                     label = "Surveyor Type",
-                    value = companyType,
-                    onValueChange = { companyType = it },
-                    onDropdownExpand = { isCompanyTypeDropdown = true },
-                    expanded = isCompanyTypeDropdown,
-                    leadingIcon = R.drawable.location,
+                    value = selectedSurveyorType,
+                    onValueChange = {
+                        onSurveyorTypeSelected(it)
+                    },
+                    onDropdownExpand = { isSurveyorTypeDropdown = true },
+                    expanded = isSurveyorTypeDropdown,
+                    leadingIcon = R.drawable.person,
                     placeholder = "Select Surveyor Type",
-                    onDismissRequest = { isCompanyTypeDropdown = false },
-                    options = companyTypeOptions
+                    onDismissRequest = { isSurveyorTypeDropdown = false },
+                    options = surveyorTypeOptions
                 )
 
+                // ✅ Insurance Company Dropdown (conditional)
                 DropdownField(
                     label = "Insurance company",
-                    value = insuranceCompany,
+                    value = if (isCompanyDropdownEnabled) insuranceCompany else "Not Applicable",
                     onValueChange = { insuranceCompany = it },
-                    onDropdownExpand = { isInsuranceDropdown = true },
-                    expanded = isInsuranceDropdown,
+                    onDropdownExpand = {
+                        if (isCompanyDropdownEnabled) {
+                            isInsuranceDropdown = true
+                        }
+                    },
+                    expanded = isInsuranceDropdown && isCompanyDropdownEnabled,
                     leadingIcon = R.drawable.location,
-                    placeholder = "Select Insurance Company",
+                    placeholder = if (isCompanyDropdownEnabled) "Select Insurance Company" else "Not Applicable",
                     onDismissRequest = { isInsuranceDropdown = false },
-                    options = insuranceOptions
+                    options = if (isCompanyDropdownEnabled) insuranceOptions else emptyList()
                 )
             }
         }
@@ -357,14 +374,23 @@ private fun JoinUsFormScreen(
         Spacer(modifier = Modifier.height(40.dp))
         RegoButton(
             onClick = {
+                // ✅ Updated logic:
+                // Company -> insuranceCompany = selected company name, role = "CSM"
+                // External -> insuranceCompany = "external", role = "CSM"
+                val companyValue = if (selectedSurveyorType == "External") {
+                    "external"  // ✅ Pass "external" in lowercase
+                } else {
+                    insuranceCompany  // ✅ Pass selected company name (will be converted to slug in ViewModel)
+                }
+
                 onSubmit(
                     name,
                     email,
                     phone,
                     city,
                     selectedState,
-                    insuranceCompany,
-                    companyType
+                    companyValue,
+                    "CSM"  // ✅ Always pass "CSM" as role
                 )
             },
             text = "Submit",

@@ -22,6 +22,7 @@ class JoinUsViewModel(
             is JoinUsEvent.LoadRegisterData -> loadRegisterData()
             is JoinUsEvent.SelectInsuranceCompany -> selectInsuranceCompany(event.company)
             is JoinUsEvent.SelectState -> selectState(event.state)
+            is JoinUsEvent.SelectSurveyorType -> selectSurveyorType(event.surveyorType)
             is JoinUsEvent.SubmitRegistration -> submitRegistration(
                 name = event.name,
                 email = event.email,
@@ -64,7 +65,6 @@ class JoinUsViewModel(
 
                     is DataState.Error -> {
                         setState { copy(progressBarState = ProgressBarState.Idle) }
-                        // ✅ FIX: Call setError instead of setAction
                         setError { dataState.uiComponent }
                     }
 
@@ -79,13 +79,23 @@ class JoinUsViewModel(
     }
 
     private fun selectState(state: String) {
-        // When state changes, update available cities
         val cities = this.state.value.stateCityMapping[state] ?: emptyList()
         setState {
             copy(
                 selectedState = state,
                 availableCities = cities,
-                selectedCity = "" // Reset city selection
+                selectedCity = ""
+            )
+        }
+    }
+
+    // ✅ New function to handle surveyor type selection
+    private fun selectSurveyorType(surveyorType: String) {
+        setState {
+            copy(
+                selectedSurveyorType = surveyorType,
+                // Reset company selection when switching types
+                selectedCompany = if (surveyorType == "External") null else selectedCompany
             )
         }
     }
@@ -99,8 +109,10 @@ class JoinUsViewModel(
         company: String,
         role: String
     ) {
-        // Validate company is selected
-        if (company.isNullOrBlank()) {
+        // ✅ Find company slug only if company is provided
+        val companySlug = this.state.value.insuranceCompanies.find { it.name == company }?.slug ?: "external"
+
+        if (role == "Company" && companySlug == "external") {
             setError {
                 UIComponent.Snackbar(
                     message = "Please select an insurance company",
@@ -116,7 +128,7 @@ class JoinUsViewModel(
             phoneNumber = phoneNumber.trim(),
             city = city.trim(),
             state = state.trim(),
-            insuranceCompany = company.trim(),
+            insuranceCompany = companySlug.toString(),
             role = role.trim()
         )
 
@@ -143,7 +155,6 @@ class JoinUsViewModel(
 
                     is DataState.Error -> {
                         setState { copy(progressBarState = ProgressBarState.Idle) }
-                        // ✅ FIX: Call setError instead of setAction
                         setError { dataState.uiComponent }
                     }
 

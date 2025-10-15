@@ -21,6 +21,9 @@ data class JoinUsViewState(
     val availableCities: List<String> = emptyList(),
     val selectedCity: String = "",
 
+    // Surveyor type
+    val selectedSurveyorType: String = "",
+
     // Registration result
     val registrationSuccess: JoinUsResponse.JoinUsData? = null
 ) : ViewState
