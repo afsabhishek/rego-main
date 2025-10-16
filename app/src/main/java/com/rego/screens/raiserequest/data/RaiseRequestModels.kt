@@ -3,13 +3,6 @@ package com.rego.screens.raiserequest.data
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
-/*// Vehicle related models
-@Serializable
-data class VehicleMake(
-    @SerialName("make")
-    val make: String
-)*/
-
 @Serializable
 data class VehicleModel(
     @SerialName("model")
@@ -105,13 +98,13 @@ data class CreateLeadResponse(
     @Serializable
     data class CreateLeadData(
         @SerialName("leadId")
-        val leadId: String,
+        val leadId: String? = null,  // ✅ Make nullable with default
         @SerialName("_id")
-        val id: String,
+        val id: String? = null,      // ✅ Make nullable with default
         @SerialName("status")
-        val status: String,
+        val status: String? = null,   // ✅ Make nullable with default
         @SerialName("createdAt")
-        val createdAt: String
+        val createdAt: String? = null // ✅ Make nullable with default
     )
 }
 

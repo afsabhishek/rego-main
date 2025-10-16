@@ -1,4 +1,3 @@
-// app/src/main/java/com/rego/screens/raiserequest/RequestSubmittedScreen.kt
 package com.rego.screens.raiserequest
 
 import androidx.compose.foundation.background
@@ -85,7 +84,7 @@ fun RequestSubmittedScreen(
         )
 
         // Lead Details Card (if available)
-        if (leadId != null) {
+        if (!leadId.isNullOrBlank()) {
             Spacer(modifier = Modifier.height(32.dp))
 
             Card(
@@ -125,10 +124,10 @@ fun RequestSubmittedScreen(
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    if (!status.isNullOrBlank()) {
+                        Spacer(modifier = Modifier.height(8.dp))
 
-                    // Status
-                    if (status != null) {
+                        // Status
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
@@ -154,12 +153,12 @@ fun RequestSubmittedScreen(
                                 )
                             }
                         }
-
-                        Spacer(modifier = Modifier.height(8.dp))
                     }
 
                     // Created Date
-                    if (createdAt != null) {
+                    if (!createdAt.isNullOrBlank()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween

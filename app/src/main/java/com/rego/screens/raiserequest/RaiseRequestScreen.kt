@@ -599,7 +599,7 @@ fun RaiseRequestScreenContent(
                 onFieldChange("claimNumber", it)
             },
             placeholder = "Enter Claim Number",
-            keyboardType = KeyboardType.Number,
+            keyboardType = KeyboardType.Text,
             labelComposable = { LabelWithAsterisk("Claim Number*") }
         )
 
