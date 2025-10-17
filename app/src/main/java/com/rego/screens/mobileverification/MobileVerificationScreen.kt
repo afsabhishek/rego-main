@@ -259,7 +259,7 @@ private fun MobileNumberInputScreen(
                 value = mobileNumber,
                 onValueChange = { value ->
                     // Allow only digits
-                    if (value.all { it.isDigit() }) {
+                    if (value.all { it.isDigit() } && value.length <= 10) {
                         onMobileNumberChange(value)
                     }
                 },

@@ -116,6 +116,8 @@ class MobileVerificationViewModel(
 
                     is DataState.Data -> {
                         dataState.data?.let { verifyData ->
+
+                            userPreferences.clearAll()
                             // Save backend tokens
                             userPreferences.saveAuthToken(
                                 verifyData.authentication.authToken,

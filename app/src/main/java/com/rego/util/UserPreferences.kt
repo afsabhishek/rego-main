@@ -157,6 +157,8 @@ class UserPreferences(private val context: Context) {
         context.dataStore.edit { preferences ->
             preferences.clear()
         }
+        clearFirebaseData()
+        clearBackendTokens()
     }
 
     suspend fun clearFirebaseData() {

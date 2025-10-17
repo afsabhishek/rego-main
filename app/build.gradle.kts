@@ -66,7 +66,6 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.google.firebase.auth.ktx)
 
-    val ktorVersion = "3.3.0"
     implementation(libs.ktor.client.android)
     implementation(libs.ktor.ktor.client.core)
     implementation(libs.ktor.client.content.negotiation)

@@ -93,7 +93,8 @@ val appModule = module {
     // Profile - Updated with real API
     factory<ProfileApi> {
         ProfileApiImpl(
-            ktorClient = get()
+            ktorClient = get(),
+            userPreferences = get()
         )
     }
     factory {

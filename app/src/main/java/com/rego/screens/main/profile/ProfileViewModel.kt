@@ -16,18 +16,13 @@ class ProfileViewModel(
 
     override fun onTriggerEvent(event: ProfileEvent) {
         when (event) {
-            is ProfileEvent.Init -> loadUserProfile()
-            is ProfileEvent.Refresh -> loadUserProfile()
+            is ProfileEvent.Init -> loadUserProfile(forceRefresh = true)
+            is ProfileEvent.Refresh -> loadUserProfile(forceRefresh = true)
             is ProfileEvent.Logout -> logout()
         }
     }
 
-    init {
-        // Auto-load profile on ViewModel creation
-        loadUserProfile()
-    }
-
-    private fun loadUserProfile() {
+    private fun loadUserProfile(forceRefresh: Boolean = false) {
         viewModelScope.launch {
             interactor.getUserProfile().collect { dataState ->
                 when (dataState) {
@@ -63,10 +58,9 @@ class ProfileViewModel(
 
                     is DataState.Error -> {
                         setState { copy(progressBarState = ProgressBarState.Idle) }
-
-                        // Try to load from cached data if API fails
-                        loadCachedProfile()
-
+                        if (!forceRefresh) {
+                            loadCachedProfile()
+                        }
                         setError { dataState.uiComponent }
                     }
 
@@ -82,6 +76,7 @@ class ProfileViewModel(
             val cachedId = userPreferences.getUserId()
 
             if (!cachedName.isNullOrBlank()) {
+                println("⚠️ Loading cached profile for: $cachedName")
                 setState {
                     copy(
                         name = cachedName,
@@ -101,7 +96,21 @@ class ProfileViewModel(
                 // Clear all user data
                 userPreferences.clearAll()
 
-                // Navigate to login
+                // ✅ Reset ViewModel state
+                setState {
+                    copy(
+                        name = null,
+                        phone = null,
+                        email = null,
+                        customerId = null,
+                        city = null,
+                        state = null,
+                        insuranceCompany = null,
+                        role = null,
+                        progressBarState = ProgressBarState.Idle
+                    )
+                }
+
                 setAction { ProfileAction.NavigateToLogin }
             } catch (e: Exception) {
                 setState { copy(progressBarState = ProgressBarState.Idle) }
