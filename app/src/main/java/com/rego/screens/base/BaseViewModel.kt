@@ -35,12 +35,6 @@ abstract class BaseViewModel<Event : ViewEvent,
     private val _state: MutableStateFlow<UiState> = MutableStateFlow(initialState)
     val state: StateFlow<UiState> = _state.asStateFlow()
 
-//    protected abstract val initialViewState: state
-//    protected var lastViewState: state = initialViewState
-//    private val _viewState = MutableStateFlow(initialViewState)
-//    val viewState = _viewState.asStateFlow()
-
-
     private val _event: MutableSharedFlow<Event> = MutableSharedFlow()
 
     private val _action: Channel<SingleAction> = Channel()
