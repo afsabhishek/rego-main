@@ -315,8 +315,8 @@ fun OrderSummaryCard(lead: LeadsResponse.LeadsData.Lead) {
             )
             Spacer(Modifier.height(2.dp))
             TwoColumnValueRow(
-                value1 = lead.dealer.name,
-                value2 = lead.dealer.location
+                value1 = lead.dealer?.name.toString(),
+                value2 = lead.dealer?.location.toString()
             )
 
             Spacer(modifier = Modifier.height(14.dp))

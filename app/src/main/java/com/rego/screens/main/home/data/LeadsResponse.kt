@@ -40,7 +40,7 @@ data class LeadsResponse(
             @SerialName("inventoryPickUp")
             val inventoryPickUp: Boolean,
             @SerialName("dealer")
-            val dealer: Dealer,
+            val dealer: Dealer? = null,
             @SerialName("advisor")
             val advisor: Advisor,
             @SerialName("policyType")

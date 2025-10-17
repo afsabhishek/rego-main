@@ -439,8 +439,8 @@ fun mapLeadToOrderData(lead: LeadsResponse.LeadsData.Lead): OrderData {
         status = formatStatus(lead.status),
         carMake = "${lead.vehicle.make} ${lead.vehicle.model}, ${lead.makeYear}",
         deliveryDate = formatDate(lead.activity.lastUpdatedAt),
-        dealerName = lead.dealer.name,
-        dealerLocation = lead.dealer.location
+        dealerName = lead.dealer?.name,
+        dealerLocation = lead.dealer?.location
     )
 }
 

@@ -366,8 +366,8 @@ class HomeViewModel(
                 status = mapStatusToDisplay(lead.status),
                 carMake = "${lead.vehicle.make} ${lead.vehicle.model}, ${lead.makeYear}",
                 deliveryDate = formatDate(lead.activity.lastUpdatedAt),
-                dealerName = lead.dealer.name,
-                dealerLocation = lead.dealer.location
+                dealerName = lead.dealer?.name,
+                dealerLocation = lead.dealer?.location
             )
         }
     }
