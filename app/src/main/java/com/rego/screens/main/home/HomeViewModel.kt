@@ -7,7 +7,6 @@ import com.rego.screens.base.DataState
 import com.rego.screens.base.ProgressBarState
 import com.rego.screens.components.OrderData
 import com.rego.screens.main.home.data.LeadStatsResponse
-import com.rego.screens.main.home.data.LeadStatus
 import com.rego.screens.main.home.data.LeadsResponse
 import com.rego.screens.main.profile.ProfileInteractor
 import com.rego.util.UserPreferences
@@ -102,6 +101,7 @@ class HomeViewModel(
 
                     is DataState.Data -> {
                         dataState.data?.let { stats ->
+                            println("📊 Lead Stats loaded: ${stats.map { it.label to it.count }}")
                             setState {
                                 copy(
                                     summaryCards = createSummaryCardsFromStats(stats),
@@ -132,20 +132,10 @@ class HomeViewModel(
 
     private fun loadOngoingLeads(status: String? = null, page: Int = 1, append: Boolean = false) {
         viewModelScope.launch {
-            // Default to WORK_IN_PROGRESS statuses
-            val defaultStatuses = listOf(
-                "PICKUP_ALIGNED",
-                "PHYSICAL_INSPECTION_ALIGNED",
-                "PICKUP_DONE",
-                "WORK_IN_PROGRESS",
-                "READY_FOR_DELIVERY",
-                "INVOICE_GENERATED"
-            )
-
-            val searchStatus = status ?: defaultStatuses[3]
+            println("📥 loadOngoingLeads called with status: $status")
 
             homeInteractor.getLeadsList(
-                status = searchStatus,
+                status = status,
                 page = page,
                 limit = 20,
                 showLoading = !append && !state.value.isRefreshing
@@ -154,6 +144,7 @@ class HomeViewModel(
                     is DataState.Data -> {
                         dataState.data?.let { leadsData ->
                             val newLeads = leadsData.leads
+                            println("✅ Leads received: ${newLeads.size} items")
 
                             if (append) {
                                 currentLeads.addAll(newLeads)
@@ -214,6 +205,8 @@ class HomeViewModel(
     }
 
     private fun filterLeadsByStatus(status: String?) {
+        println("🔍 filterLeadsByStatus called with: $status")
+
         if (status == null) {
             setState {
                 copy(
@@ -222,10 +215,11 @@ class HomeViewModel(
                     currentPage = 1
                 )
             }
-            loadOngoingLeads()
+            loadOngoingLeads(null)
         } else {
-            // Map the status key to API format
+            // ✅ FIXED: Map the card label to API status format
             val apiStatus = mapStatusKeyToApiFormat(status)
+            println("🔍 Mapped card label '$status' to API status: $apiStatus")
 
             setState {
                 copy(
@@ -239,16 +233,17 @@ class HomeViewModel(
     }
 
     /**
-     * Maps UI status keys (from cards) to API status format
+     * ✅ Maps card label to API status format
+     * This is called when user clicks on summary cards
      */
     private fun mapStatusKeyToApiFormat(statusKey: String): String {
-        return when (statusKey.uppercase()) {
-            "NEW" -> "NEW"
-            "TOTAL" -> "TOTAL" // Total leads shows WIP by default
-            "APPROVED" -> "APPROVED"
-            "REJECTED" -> "REJECTED"
-            "DELIVERED" -> "DELIVERED"
-            "WORK_IN_PROGRESS" -> "WORK_IN_PROGRESS"
+        return when (statusKey) {
+            "New Leads" -> "NEW"
+            "Total Leads" -> ""  // Empty string = all leads
+            "Approved" -> "APPROVED"
+            "Not Repairable" -> "REJECTED"
+            "Completed" -> "DELIVERED"
+            "Work in Progress" -> "WORK_IN_PROGRESS"
             else -> statusKey.uppercase().replace(" ", "_")
         }
     }
@@ -312,9 +307,13 @@ class HomeViewModel(
         // Load leads for the selected card type
         val statItem = state.value.leadStatsItems?.find { it.label == cardType }
         if (statItem != null && statItem.status.isNotEmpty()) {
-            loadOngoingLeads(statItem.status.joinToString(","))
+            // ✅ FIXED: Pass the status from the card
+            val statusToLoad = statItem.status.first()
+            println("📊 Loading leads for card: $cardType with status: $statusToLoad")
+            loadOngoingLeads(statusToLoad, page = 1)
         } else if (cardType == "Total Leads") {
-            loadOngoingLeads(null) // Load all leads
+            println("📊 Loading all leads for Total Leads card")
+            loadOngoingLeads(null)
         }
     }
 

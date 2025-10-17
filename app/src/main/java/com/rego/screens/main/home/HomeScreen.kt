@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
@@ -104,6 +103,7 @@ fun HomeScreen(
                 onOrderListClick = onOrderListClick,
                 onNotificationClick = onNotificationClick,
                 onFilterClick = { filter ->
+                    println("🔍 Filter clicked in HomeScreen: $filter")
                     events(HomeEvent.FilterLeads(filter))
                 }
             )
@@ -207,9 +207,9 @@ fun HomeScreenContent(
                     .height(70.dp),
                 contentAlignment = Alignment.CenterStart
             ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
                         .padding(horizontal = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -223,17 +223,17 @@ fun HomeScreenContent(
                         modifier = Modifier
                             .weight(1f)
                             .padding(start = 10.dp)
-            ) {
+                    ) {
                         Text(
                             text = "Raise a request",
                             style = fontSemiBoldMontserrat().copy(fontSize = 14.sp),
                             color = Color1A1A1A_90()
-                )
+                        )
                         Text(
                             text = "Send request to REGO CRs for part repairs",
                             style = fontSemiBoldMontserrat().copy(fontSize = 10.sp),
                             color = Color1A1A1A_60()
-                )
+                        )
                     }
                     Icon(
                         painter = painterResource(R.drawable.back),
@@ -256,37 +256,40 @@ fun HomeScreenContent(
             ) {
                 // Summary Cards Section
                 if (state.summaryCards?.isNotEmpty() == true) {
-                item {
+                    item {
                         // SUMMARY CARDS GRID - 2x3 grid layout (6 cards total)
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 18.dp)
-                    ) {
-                            // First row (2 cards)
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(14.dp),
-                            modifier = Modifier.fillMaxWidth()
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 18.dp)
                         ) {
+                            // First row (2 cards)
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
                                 state.summaryCards?.take(2)
                                     ?.forEach { (label, iconRes, value) ->
                                         SummaryCard(
                                             label = label,
                                             iconRes = iconRes,
                                             value = value,
-                                            onClick = { onOrderListClick(label) },
+                                            onClick = {
+                                                println("🔍 Card clicked: $label")
+                                                onFilterClick(label)
+                                            },
                                             modifier = Modifier.weight(1f)
-                            )
+                                        )
                                     }
-                        }
+                            }
 
-                        Spacer(modifier = Modifier.height(12.dp))
+                            Spacer(modifier = Modifier.height(12.dp))
 
                             // Second row (2 cards)
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(14.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
                                 state.summaryCards?.let { cards ->
                                     if (cards.size > 2) {
                                         cards.subList(2, minOf(4, cards.size))
@@ -295,21 +298,24 @@ fun HomeScreenContent(
                                                     label = label,
                                                     iconRes = iconRes,
                                                     value = value,
-                                                    onClick = { onOrderListClick(label) },
+                                                    onClick = {
+                                                        println("🔍 Card clicked: $label")
+                                                        onFilterClick(label)
+                                                    },
                                                     modifier = Modifier.weight(1f)
-                            )
+                                                )
                                             }
                                     }
                                 }
-                        }
+                            }
 
-                        Spacer(modifier = Modifier.height(12.dp))
+                            Spacer(modifier = Modifier.height(12.dp))
 
                             // Third row (2 cards)
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(14.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
                                 state.summaryCards?.let { cards ->
                                     if (cards.size > 4) {
                                         cards.subList(4, minOf(6, cards.size))
@@ -318,20 +324,23 @@ fun HomeScreenContent(
                                                     label = label,
                                                     iconRes = iconRes,
                                                     value = value,
-                                                    onClick = { onOrderListClick(label) },
+                                                    onClick = {
+                                                        println("🔍 Card clicked: $label")
+                                                        onFilterClick(label)
+                                                    },
                                                     modifier = Modifier.weight(1f)
-                            )
+                                                )
                                             }
                                     }
                                 }
+                            }
                         }
-                    }
 
-                    Spacer(modifier = Modifier.height(26.dp))
-                    HorizontalDivider(
-                        thickness = 1.dp,
-                        color = Color.LightGray,
-                    )
+                        Spacer(modifier = Modifier.height(26.dp))
+                        HorizontalDivider(
+                            thickness = 1.dp,
+                            color = Color.LightGray,
+                        )
                     }
                 }
 
@@ -393,7 +402,7 @@ fun HomeScreenContent(
                 if (displayOrders.isNotEmpty()) {
                     item {
                         Spacer(modifier = Modifier.height(10.dp))
-                        LazyRow(contentPadding = PaddingValues(horizontal = 16.dp)) {
+                        androidx.compose.foundation.lazy.LazyRow(contentPadding = PaddingValues(horizontal = 16.dp)) {
                             val quickFilters = state.quickFilters
                             if (quickFilters?.isNotEmpty() == true) {
                                 items(quickFilters) { filter ->
@@ -411,6 +420,7 @@ fun HomeScreenContent(
                                                 RoundedCornerShape(21.dp)
                                             )
                                             .clickable {
+                                                println("🔍 Quick filter clicked: $filter")
                                                 onFilterClick(if (selected) null else filter)
                                             }
                                     ) {
@@ -494,9 +504,9 @@ fun SummaryCard(
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
+                modifier = Modifier
                     .fillMaxWidth()
-                .padding(12.dp),
+                    .padding(12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
@@ -504,12 +514,12 @@ fun SummaryCard(
                     style = fontSemiBoldMontserrat().copy(fontSize = 12.sp),
                     color = Color1A1A1A_60()
                 )
-                    Image(
-                        painter = painterResource(id = iconRes),
+                Image(
+                    painter = painterResource(id = iconRes),
                     contentDescription = label,
                     modifier = Modifier.size(24.dp)
-                    )
-                }
+                )
+            }
             Spacer(Modifier.height(6.dp))
             Row(
                 modifier = Modifier
@@ -524,14 +534,14 @@ fun SummaryCard(
                     color = Color.Black
                 )
                 Spacer(Modifier.width(14.dp))
-                    Icon(
-                        painter = painterResource(R.drawable.back),
+                Icon(
+                    painter = painterResource(R.drawable.back),
                     contentDescription = "Arrow",
-                        modifier = Modifier
+                    modifier = Modifier
                         .size(13.dp)
-                            .rotate(180f),
+                        .rotate(180f),
                     tint = Color00954D
-                    )
+                )
             }
         }
     }
