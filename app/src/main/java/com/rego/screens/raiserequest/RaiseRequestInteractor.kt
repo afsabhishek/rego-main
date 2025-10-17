@@ -289,6 +289,10 @@ class RaiseRequestInteractor(
 
             if (response.success && response.data != null) {
                 emit(DataState.Data(response.data))
+                // ✅ FIXED: Cleanup temp files
+                tempFiles.forEach { file ->
+                    FileUtils.deleteFile(file)
+                }
             } else {
                 emit(DataState.Error(
                     UIComponent.Dialog(
@@ -307,10 +311,6 @@ class RaiseRequestInteractor(
                 )
             ))
         } finally {
-            // ✅ FIXED: Cleanup temp files
-            tempFiles.forEach { file ->
-                FileUtils.deleteFile(file)
-            }
             emit(DataState.Loading(progressBarState = ProgressBarState.Idle))
         }
     }
