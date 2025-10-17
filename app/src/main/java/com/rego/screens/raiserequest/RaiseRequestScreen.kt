@@ -30,7 +30,9 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.toUpperCase
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -596,7 +598,7 @@ fun RaiseRequestScreenContent(
             label = "",
             value = state.claimNumber,
             onValueChange = {
-                onFieldChange("claimNumber", it)
+                onFieldChange("claimNumber", it.toUpperCase(Locale.current))
             },
             placeholder = "Enter Claim Number",
             keyboardType = KeyboardType.Text,

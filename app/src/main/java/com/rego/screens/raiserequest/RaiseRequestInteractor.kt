@@ -328,7 +328,6 @@ class RaiseRequestInteractor(
             !isValidPhoneNumber(request.advisorContact) -> "Invalid contact number. Must be 10 digits"
             request.policyType.isBlank() -> "Policy type is required"
             request.claimNumber.isBlank() -> "Claim number is required"
-            !request.claimNumber.all { it.isDigit() } -> "Claim number must contain only numbers"
             else -> null
         }
     }
