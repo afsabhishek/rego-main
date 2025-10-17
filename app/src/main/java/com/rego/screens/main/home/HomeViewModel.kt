@@ -224,6 +224,9 @@ class HomeViewModel(
             }
             loadOngoingLeads()
         } else {
+            // Map the status key to API format
+            val apiStatus = mapStatusKeyToApiFormat(status)
+
             setState {
                 copy(
                     selectedFilter = status,
@@ -231,8 +234,22 @@ class HomeViewModel(
                 )
             }
 
-            val statusString = getStatusesForFilter(status)
-            loadOngoingLeads(statusString)
+            loadOngoingLeads(apiStatus)
+        }
+    }
+
+    /**
+     * Maps UI status keys (from cards) to API status format
+     */
+    private fun mapStatusKeyToApiFormat(statusKey: String): String {
+        return when (statusKey.uppercase()) {
+            "NEW" -> "NEW"
+            "TOTAL" -> "TOTAL" // Total leads shows WIP by default
+            "APPROVED" -> "APPROVED"
+            "REJECTED" -> "REJECTED"
+            "DELIVERED" -> "DELIVERED"
+            "WORK_IN_PROGRESS" -> "WORK_IN_PROGRESS"
+            else -> statusKey.uppercase().replace(" ", "_")
         }
     }
 

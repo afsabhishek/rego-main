@@ -53,7 +53,7 @@ class HomeApiImpl(
                 partType?.let { parameter("partType", it) }
                 registrationNumber?.let { parameter("registrationNumber", it) }
                 claimNumber?.let { parameter("claimNumber", it) }
-            }
+                }
 
             response.body<LeadsResponse>()
         } catch (e: Exception) {

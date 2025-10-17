@@ -207,9 +207,9 @@ fun HomeScreenContent(
                     .height(70.dp),
                 contentAlignment = Alignment.CenterStart
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
                         .padding(horizontal = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -223,17 +223,17 @@ fun HomeScreenContent(
                         modifier = Modifier
                             .weight(1f)
                             .padding(start = 10.dp)
-                    ) {
+            ) {
                         Text(
                             text = "Raise a request",
                             style = fontSemiBoldMontserrat().copy(fontSize = 14.sp),
                             color = Color1A1A1A_90()
-                        )
+                )
                         Text(
                             text = "Send request to REGO CRs for part repairs",
                             style = fontSemiBoldMontserrat().copy(fontSize = 10.sp),
                             color = Color1A1A1A_60()
-                        )
+                )
                     }
                     Icon(
                         painter = painterResource(R.drawable.back),
@@ -256,18 +256,18 @@ fun HomeScreenContent(
             ) {
                 // Summary Cards Section
                 if (state.summaryCards?.isNotEmpty() == true) {
-                    item {
+                item {
                         // SUMMARY CARDS GRID - 2x3 grid layout (6 cards total)
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 18.dp)
-                        ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 18.dp)
+                    ) {
                             // First row (2 cards)
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(14.dp),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(14.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
                                 state.summaryCards?.take(2)
                                     ?.forEach { (label, iconRes, value) ->
                                         SummaryCard(
@@ -276,17 +276,17 @@ fun HomeScreenContent(
                                             value = value,
                                             onClick = { onOrderListClick(label) },
                                             modifier = Modifier.weight(1f)
-                                        )
+                            )
                                     }
-                            }
+                        }
 
-                            Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
 
                             // Second row (2 cards)
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(14.dp),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(14.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
                                 state.summaryCards?.let { cards ->
                                     if (cards.size > 2) {
                                         cards.subList(2, minOf(4, cards.size))
@@ -297,19 +297,19 @@ fun HomeScreenContent(
                                                     value = value,
                                                     onClick = { onOrderListClick(label) },
                                                     modifier = Modifier.weight(1f)
-                                                )
+                            )
                                             }
                                     }
                                 }
-                            }
+                        }
 
-                            Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
 
                             // Third row (2 cards)
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(14.dp),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(14.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
                                 state.summaryCards?.let { cards ->
                                     if (cards.size > 4) {
                                         cards.subList(4, minOf(6, cards.size))
@@ -320,18 +320,18 @@ fun HomeScreenContent(
                                                     value = value,
                                                     onClick = { onOrderListClick(label) },
                                                     modifier = Modifier.weight(1f)
-                                                )
+                            )
                                             }
                                     }
                                 }
-                            }
                         }
+                    }
 
-                        Spacer(modifier = Modifier.height(26.dp))
-                        HorizontalDivider(
-                            thickness = 1.dp,
-                            color = Color.LightGray,
-                        )
+                    Spacer(modifier = Modifier.height(26.dp))
+                    HorizontalDivider(
+                        thickness = 1.dp,
+                        color = Color.LightGray,
+                    )
                     }
                 }
 
@@ -494,9 +494,9 @@ fun SummaryCard(
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
+            modifier = Modifier
                     .fillMaxWidth()
-                    .padding(12.dp),
+                .padding(12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
@@ -504,12 +504,12 @@ fun SummaryCard(
                     style = fontSemiBoldMontserrat().copy(fontSize = 12.sp),
                     color = Color1A1A1A_60()
                 )
-                Image(
-                    painter = painterResource(id = iconRes),
+                    Image(
+                        painter = painterResource(id = iconRes),
                     contentDescription = label,
                     modifier = Modifier.size(24.dp)
-                )
-            }
+                    )
+                }
             Spacer(Modifier.height(6.dp))
             Row(
                 modifier = Modifier
@@ -524,14 +524,14 @@ fun SummaryCard(
                     color = Color.Black
                 )
                 Spacer(Modifier.width(14.dp))
-                Icon(
-                    painter = painterResource(R.drawable.back),
+                    Icon(
+                        painter = painterResource(R.drawable.back),
                     contentDescription = "Arrow",
-                    modifier = Modifier
+                        modifier = Modifier
                         .size(13.dp)
-                        .rotate(180f),
+                            .rotate(180f),
                     tint = Color00954D
-                )
+                    )
             }
         }
     }
