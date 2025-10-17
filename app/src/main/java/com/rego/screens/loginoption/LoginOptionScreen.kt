@@ -1,5 +1,6 @@
 package com.rego.screens.loginoption
 
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -22,26 +23,25 @@ import androidx.compose.ui.draw.paint
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withLink
-import androidx.compose.ui.text.LinkAnnotation
-import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.rego.R
 import com.rego.screens.base.DefaultScreenUI
 import com.rego.screens.components.RegoButton
-import org.koin.compose.viewmodel.koinViewModel
-import androidx.compose.ui.platform.LocalContext
-import android.widget.Toast
-import androidx.compose.ui.text.font.FontFamily
 import com.rego.ui.theme.NativeAndroidBaseArchitectureTheme
-import com.rego.ui.theme.fontLightPoppins
+import com.rego.ui.theme.fontMediumPoppins
+import com.rego.ui.theme.fontSemiBoldPoppins
+import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun LoginOptionScreen(
@@ -102,9 +102,7 @@ fun LoginOptionScreen(
                 // Welcome text
                 Text(
                     text = "Join our exclusive Insurance\npartner network!",
-                    color = Color.White,
-                    fontWeight = FontWeight.Medium,
-                    style = fontLightPoppins().copy(fontSize = 18.sp),
+                    style = fontSemiBoldPoppins().copy(color = Color.White, fontSize = 18.sp),
                     textAlign = TextAlign.Center,
                     lineHeight = 24.sp,
                     modifier = Modifier.padding(top = 12.dp, bottom = 16.dp)
@@ -129,7 +127,7 @@ fun LoginOptionScreen(
                     Text(
                         text = "Join Us",
                         color = Color.White,
-                        style = fontLightPoppins().copy(fontSize = 16.sp),
+                        style = fontMediumPoppins().copy(fontSize = 16.sp),
                         fontWeight = FontWeight.SemiBold
                     )
                 }

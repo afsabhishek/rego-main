@@ -9,14 +9,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.rego.ui.theme.Color00954D
 import com.rego.ui.theme.NativeAndroidBaseArchitectureTheme
-import com.rego.ui.theme.fontLightPoppins
+import com.rego.ui.theme.fontSemiBoldMontserrat
 
 @Composable
 fun RegoButton(onClick: () -> Unit, text: String, enabled: Boolean = true, height: Dp = 44.dp) {
@@ -34,9 +33,7 @@ fun RegoButton(onClick: () -> Unit, text: String, enabled: Boolean = true, heigh
     ) {
         Text(
             text = text,
-            color = Color.White,
-            style = fontLightPoppins().copy(fontSize = 16.sp),
-            fontWeight = FontWeight.SemiBold
+            style = fontSemiBoldMontserrat().copy(color = Color.White, fontSize = 16.sp)
         )
     }
 }

@@ -51,6 +51,7 @@ import com.rego.screens.components.TransparentInputField
 import com.rego.ui.theme.Color00954D
 import com.rego.ui.theme.Color1A1A1A
 import com.rego.ui.theme.Color1A1A1A_60
+import com.rego.ui.theme.Color1A1A1A_90
 import com.rego.ui.theme.fontSemiBoldMontserrat
 import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
@@ -119,8 +120,7 @@ fun JoinUsParentScreen(
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(
                         text = "Join Us",
-                        style = fontSemiBoldMontserrat().copy(fontSize = 16.sp),
-                        color = Color.Black
+                        style = fontSemiBoldMontserrat().copy(fontSize = 16.sp, color = Color1A1A1A_90())
                     )
                 }
                 Box(
@@ -251,16 +251,13 @@ private fun JoinUsFormScreen(
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = "Become a Insurance partner today!",
-            fontWeight = FontWeight.SemiBold,
-            fontSize = 16.sp,
-            color = Color1A1A1A,
+            style = fontSemiBoldMontserrat().copy(fontSize = 16.sp, color = Color1A1A1A),
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(top = 16.dp)
         )
         Text(
             text = "Fill out the form and our team will get back to you.",
-            color = Color1A1A1A_60(),
-            fontSize = 14.sp,
+            style = fontSemiBoldMontserrat().copy(fontSize = 14.sp, color = Color1A1A1A_60()),
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(top = 8.dp, bottom = 18.dp)
         )
@@ -425,15 +422,12 @@ private fun JoinUsSuccessScreen(onOkay: () -> Unit) {
         Spacer(modifier = Modifier.height(36.dp))
         Text(
             text = "Response Submitted",
-            color = Color1A1A1A,
-            fontWeight = FontWeight.SemiBold,
-            fontSize = 16.sp,
+            style = fontSemiBoldMontserrat().copy(fontSize = 16.sp, color = Color1A1A1A),
             textAlign = TextAlign.Center
         )
         Text(
             text = "Thank you for your interest. We will\nreach out to you within the next 24 hours.\n\nPlease login to continue.",
-            color = Color1A1A1A_60(),
-            fontSize = 12.sp,
+            style = fontSemiBoldMontserrat().copy(fontSize = 12.sp, color = Color1A1A1A_60()),
             modifier = Modifier.padding(vertical = 10.dp),
             textAlign = TextAlign.Center
         )

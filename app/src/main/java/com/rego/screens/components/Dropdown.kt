@@ -26,6 +26,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.rego.R
 import com.rego.ui.theme.Color1A1A1A_60
+import com.rego.ui.theme.Color1A1A1A_90
+import com.rego.ui.theme.fontSemiBoldMontserrat
 
 @Composable
 fun DropdownField(
@@ -56,8 +58,7 @@ fun DropdownField(
             } else {
                 Text(
                     text = label,
-                    color = Color1A1A1A_60(),
-                    fontSize = 13.sp,
+                    style = fontSemiBoldMontserrat().copy(fontSize = 13.sp, color = Color1A1A1A_60()),
                     modifier = Modifier.padding(bottom = 2.dp)
                 )
             }
@@ -81,8 +82,7 @@ fun DropdownField(
             ) {
                 Text(
                     text = value.ifEmpty { placeholder },
-                    color = if (value.isEmpty()) Color.Gray else Color.Black,
-                    fontSize = 15.sp,
+                    style = fontSemiBoldMontserrat().copy(fontSize = 15.sp, color = if (value.isEmpty()) Color1A1A1A_60() else Color1A1A1A_90()),
                     modifier = Modifier.weight(1f)
                 )
                 Icon(

@@ -200,15 +200,11 @@ fun RaiseRequestScreenContent(
         // Part Type Selection
         Text(
             text = "Part type",
-            fontSize = 16.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = Color1A1A1A_90()
-        )
+            style = fontSemiBoldMontserrat().copy(fontSize = 16.sp, color = Color1A1A1A_90()),
+            )
         Text(
             text = "Choose part for repair",
-            fontSize = 12.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = Color1A1A1A_60(),
+            style = fontSemiBoldMontserrat().copy(fontSize = 12.sp, color = Color1A1A1A_60()),
             modifier = Modifier.padding(top = 4.dp)
         )
 
@@ -238,15 +234,11 @@ fun RaiseRequestScreenContent(
         // Part Photos Section
         Text(
             text = "Part photos",
-            fontSize = 16.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = Color1A1A1A_90()
+            style = fontSemiBoldMontserrat().copy(fontSize = 16.sp, color = Color1A1A1A_90()),
         )
         Text(
             text = "Upload photos of the part (Max 10 photos, 10MB each)",
-            fontSize = 12.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = Color1A1A1A_60(),
+            style = fontSemiBoldMontserrat().copy(fontSize = 12.sp, color = Color1A1A1A_60()),
             modifier = Modifier.padding(top = 4.dp)
         )
 
@@ -311,15 +303,12 @@ fun RaiseRequestScreenContent(
         // Vehicle Details Section
         Text(
             text = "Vehicle Details",
-            fontSize = 16.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = Color1A1A1A_90(),
+            style = fontSemiBoldMontserrat().copy(fontSize = 16.sp, color = Color1A1A1A),
             modifier = Modifier.padding(bottom = 4.dp)
         )
         Text(
             text = "Select your vehicle",
-            fontSize = 12.sp,
-            color = Color1A1A1A_60(),
+            style = fontSemiBoldMontserrat().copy(fontSize = 12.sp, color = Color1A1A1A_60()),
             modifier = Modifier.padding(bottom = 16.dp)
         )
 
@@ -451,15 +440,12 @@ fun RaiseRequestScreenContent(
         // Workshop Details Section
         Text(
             text = "Workshop Details",
-            fontSize = 16.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = Color1A1A1A_90(),
+            style = fontSemiBoldMontserrat().copy(fontSize = 16.sp, color = Color1A1A1A_60()),
             modifier = Modifier.padding(bottom = 4.dp)
         )
         Text(
             text = "Select workshop location and dealer",
-            fontSize = 12.sp,
-            color = Color1A1A1A_60(),
+            style = fontSemiBoldMontserrat().copy(fontSize = 12.sp, color = Color1A1A1A_60()),
             modifier = Modifier.padding(bottom = 16.dp)
         )
 
@@ -528,15 +514,12 @@ fun RaiseRequestScreenContent(
         // Advisor Details Section
         Text(
             text = "Advisor Details",
-            fontSize = 16.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = Color1A1A1A_90(),
+            style = fontSemiBoldMontserrat().copy(fontSize = 16.sp, color = Color1A1A1A_60()),
             modifier = Modifier.padding(bottom = 4.dp)
         )
         Text(
             text = "Enter advisor information",
-            fontSize = 12.sp,
-            color = Color1A1A1A_60(),
+            style = fontSemiBoldMontserrat().copy(fontSize = 12.sp, color = Color1A1A1A_60()),
             modifier = Modifier.padding(bottom = 16.dp)
         )
 
@@ -568,15 +551,12 @@ fun RaiseRequestScreenContent(
         // Policy Details Section
         Text(
             text = "Policy Details",
-            fontSize = 16.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = Color1A1A1A_90(),
+            style = fontSemiBoldMontserrat().copy(fontSize = 16.sp, color = Color1A1A1A_60()),
             modifier = Modifier.padding(bottom = 4.dp)
         )
         Text(
             text = "Enter policy information",
-            fontSize = 12.sp,
-            color = Color1A1A1A_60(),
+            style = fontSemiBoldMontserrat().copy(fontSize = 12.sp, color = Color1A1A1A_60()),
             modifier = Modifier.padding(bottom = 16.dp)
         )
 

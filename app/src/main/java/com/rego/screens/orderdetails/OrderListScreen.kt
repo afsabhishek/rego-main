@@ -56,8 +56,7 @@ import com.rego.ui.theme.Color00954D
 import com.rego.ui.theme.Color1A1A1A_40
 import com.rego.ui.theme.NativeAndroidBaseArchitectureTheme
 import com.rego.ui.theme.fontBoldPoppins
-import com.rego.ui.theme.fontMediumPoppins
-import com.rego.ui.theme.fontSemiBoldPoppins
+import com.rego.ui.theme.fontSemiBoldMontserrat
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import java.text.SimpleDateFormat
@@ -128,7 +127,7 @@ fun OrderListScreen(
                 title = {
                     Text(
                         text = orderType,
-                        style = fontSemiBoldPoppins().copy(fontSize = 16.sp, color = Color.White)
+                        style = fontSemiBoldMontserrat().copy(fontSize = 16.sp, color = Color.White)
                     )
                 },
                 navigationIcon = {
@@ -222,7 +221,7 @@ fun OrderListScreen(
                                     text = partType.name,
                                     style = if (currentTab.value == index) fontBoldPoppins().copy(
                                         color = Color.White
-                                    ) else fontSemiBoldPoppins().copy(color = Color.White.copy(alpha = 0.8f)),
+                                    ) else fontSemiBoldMontserrat().copy(color = Color.White.copy(alpha = 0.8f)),
                                     textAlign = TextAlign.Center,
                                     fontSize = 10.sp
                                 )
@@ -259,7 +258,7 @@ fun OrderListScreen(
                             end = 4.dp
                         ),
                         text = "Filter",
-                        style = fontMediumPoppins().copy(fontSize = 12.sp),
+                        style = fontSemiBoldMontserrat().copy(fontSize = 12.sp),
                         color = Color.Black
                     )
                     Spacer(modifier = Modifier.width(4.dp))
@@ -293,7 +292,7 @@ fun OrderListScreen(
                             end = 4.dp
                         ),
                         text = "Sort by",
-                        style = fontMediumPoppins().copy(fontSize = 12.sp),
+                        style = fontSemiBoldMontserrat().copy(fontSize = 12.sp),
                         color = Color.Black
                     )
                     Spacer(modifier = Modifier.width(4.dp))
@@ -376,12 +375,12 @@ fun OrderListContent(
         ) {
             Text(
                 text = "Total",
-                style = fontMediumPoppins().copy(fontSize = 14.sp),
+                style = fontSemiBoldMontserrat().copy(fontSize = 14.sp),
                 color = Color1A1A1A_40()
             )
             Text(
                 text = String.format("%02d", leads.size),
-                style = fontSemiBoldPoppins().copy(fontSize = 14.sp),
+                style = fontSemiBoldMontserrat().copy(fontSize = 14.sp),
                 color = Color.Black.copy(alpha = 0.87f)
             )
         }
@@ -394,7 +393,7 @@ fun OrderListContent(
                 Text(
                     text = "No orders found",
                     color = Color.Gray,
-                    style = fontMediumPoppins().copy(fontSize = 14.sp)
+                    style = fontSemiBoldMontserrat().copy(fontSize = 14.sp)
                 )
             }
         } else {

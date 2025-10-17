@@ -21,13 +21,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.rego.ui.theme.Color1A1A1A
 import com.rego.ui.theme.Color1A1A1A_40
 import com.rego.ui.theme.Color1A1A1A_60
+import com.rego.ui.theme.fontSemiBoldPoppins
 
 @Composable
 fun TransparentInputField(
@@ -56,8 +55,7 @@ fun TransparentInputField(
             } else {
                 Text(
                     text = label,
-                    color = Color1A1A1A_60(),
-                    fontSize = 12.sp,
+                    style = fontSemiBoldPoppins().copy(fontSize = 12.sp, color = Color1A1A1A_60()),
                     modifier = Modifier.padding(bottom = 2.dp)
                 )
             }
@@ -67,7 +65,7 @@ fun TransparentInputField(
             value = value,
             modifier = Modifier.height(40.dp),
             onValueChange = onValueChange,
-            textStyle = TextStyle(fontSize = 14.sp, color = Color1A1A1A),
+            textStyle = fontSemiBoldPoppins().copy(fontSize = 14.sp, color = Color1A1A1A_60()),
             keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
             singleLine = true,
             decorationBox = { innerTextField ->
@@ -85,8 +83,7 @@ fun TransparentInputField(
                     if (value.isEmpty()) {
                         Text(
                             text = placeholder,
-                            color = Color1A1A1A_40(),
-                            fontSize = 14.sp
+                            style = fontSemiBoldPoppins().copy(fontSize = 14.sp, color = Color1A1A1A_40())
                         )
                     }
                     innerTextField()
