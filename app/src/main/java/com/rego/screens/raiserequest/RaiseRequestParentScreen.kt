@@ -31,7 +31,7 @@ import com.rego.R
 import com.rego.screens.base.DefaultScreenUI
 import com.rego.screens.base.EffectHandler
 import com.rego.ui.theme.Color1A1A1A_90
-import com.rego.ui.theme.NativeAndroidBaseArchitectureTheme
+import com.rego.ui.theme.RegoTheme
 import com.rego.ui.theme.fontSemiBoldMontserrat
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
@@ -162,7 +162,7 @@ fun RaiseRequestParentScreen(
 @Preview(showBackground = true)
 @Composable
 fun RaiseRequestParentScreenPreview() {
-    NativeAndroidBaseArchitectureTheme {
+    RegoTheme {
         RaiseRequestParentScreen()
     }
 }

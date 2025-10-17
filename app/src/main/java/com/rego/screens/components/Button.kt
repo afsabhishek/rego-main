@@ -14,7 +14,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.rego.ui.theme.Color00954D
-import com.rego.ui.theme.NativeAndroidBaseArchitectureTheme
+import com.rego.ui.theme.RegoTheme
 import com.rego.ui.theme.fontSemiBoldMontserrat
 
 @Composable
@@ -41,7 +41,7 @@ fun RegoButton(onClick: () -> Unit, text: String, enabled: Boolean = true, heigh
 @Preview
 @Composable
 fun RegoButtonPreview() {
-    NativeAndroidBaseArchitectureTheme {
+    RegoTheme {
         RegoButton(onClick = { /*TODO*/ }, text = "Button Text", enabled = false)
     }
 }

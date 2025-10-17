@@ -54,7 +54,7 @@ import com.rego.screens.main.home.data.LeadStatus
 import com.rego.screens.main.home.data.LeadsResponse
 import com.rego.ui.theme.Color00954D
 import com.rego.ui.theme.Color1A1A1A_40
-import com.rego.ui.theme.NativeAndroidBaseArchitectureTheme
+import com.rego.ui.theme.RegoTheme
 import com.rego.ui.theme.fontBoldPoppins
 import com.rego.ui.theme.fontSemiBoldMontserrat
 import kotlinx.coroutines.launch
@@ -475,7 +475,7 @@ fun formatDate(dateString: String?): String {
 @Preview
 @Composable
 fun PreviewOrderListScreen() {
-    NativeAndroidBaseArchitectureTheme {
+    RegoTheme {
         OrderListScreen()
     }
 }

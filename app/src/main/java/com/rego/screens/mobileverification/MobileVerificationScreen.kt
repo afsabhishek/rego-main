@@ -37,7 +37,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -47,7 +46,6 @@ import androidx.compose.ui.unit.sp
 import com.rego.R
 import com.rego.screens.base.DefaultScreenUI
 import com.rego.screens.base.EffectHandler
-import com.rego.screens.base.ProgressBarState
 import com.rego.screens.components.OtpInputViewType2
 import com.rego.screens.components.RegoButton
 import com.rego.ui.theme.Color00954D
@@ -56,7 +54,7 @@ import com.rego.ui.theme.Color1A1A1A_40
 import com.rego.ui.theme.Color1A1A1A_60
 import com.rego.ui.theme.Color1A1A1A_87
 import com.rego.ui.theme.Color1A1A1A_90
-import com.rego.ui.theme.NativeAndroidBaseArchitectureTheme
+import com.rego.ui.theme.RegoTheme
 import com.rego.ui.theme.fontBoldPoppins
 import com.rego.ui.theme.fontMediumMontserrat
 import com.rego.ui.theme.fontSemiBoldPoppins
@@ -520,7 +518,7 @@ private fun OtpVerificationScreen(
 @Preview(showBackground = true, heightDp = 800)
 @Composable
 fun MobileVerificationScreenPreview() {
-    NativeAndroidBaseArchitectureTheme {
+    RegoTheme {
         MobileVerificationScreen(
             onVerificationComplete = {}
         )

@@ -1,7 +1,6 @@
 package com.rego.screens.raiserequest
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -297,7 +296,7 @@ private fun formatDate(dateString: String): String {
 @Preview(showBackground = true)
 @Composable
 fun RequestSubmittedScreenPreview() {
-    NativeAndroidBaseArchitectureTheme {
+    RegoTheme {
         RequestSubmittedScreen(
             leadId = "LEAD172345678901ABCDE",
             status = "NEW",
@@ -309,7 +308,7 @@ fun RequestSubmittedScreenPreview() {
 @Preview(showBackground = true)
 @Composable
 fun RequestSubmittedScreenSimplePreview() {
-    NativeAndroidBaseArchitectureTheme {
+    RegoTheme {
         RequestSubmittedScreen()
     }
 }

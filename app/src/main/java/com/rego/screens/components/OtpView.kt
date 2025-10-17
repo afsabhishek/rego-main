@@ -44,7 +44,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.rego.ui.theme.Color00954D
 import com.rego.ui.theme.Color1A1A1A_80
-import com.rego.ui.theme.NativeAndroidBaseArchitectureTheme
+import com.rego.ui.theme.RegoTheme
 import com.rego.ui.theme.fontMediumPoppins
 
 @Composable
@@ -292,7 +292,7 @@ fun OtpInputViewType2(
 @Preview
 @Composable
 fun OtpViewType1Preview() {
-    NativeAndroidBaseArchitectureTheme {
+    RegoTheme {
         OtpView { }
     }
 }
@@ -300,7 +300,7 @@ fun OtpViewType1Preview() {
 @Preview(showBackground = true)
 @Composable
 fun OtpViewType2Preview() {
-    NativeAndroidBaseArchitectureTheme {
+    RegoTheme {
         OtpInputViewType2(onOtpComplete = {}, onDoneClick = {}, onCurrentOtpLength = {})
     }
 }

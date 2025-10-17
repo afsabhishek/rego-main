@@ -38,7 +38,7 @@ import androidx.compose.ui.unit.sp
 import com.rego.R
 import com.rego.screens.base.DefaultScreenUI
 import com.rego.screens.components.RegoButton
-import com.rego.ui.theme.NativeAndroidBaseArchitectureTheme
+import com.rego.ui.theme.RegoTheme
 import com.rego.ui.theme.fontMediumPoppins
 import com.rego.ui.theme.fontSemiBoldPoppins
 import org.koin.compose.viewmodel.koinViewModel
@@ -188,7 +188,7 @@ fun LoginOptionScreen(
 @Preview
 @Composable
 fun LoginScreenPreview() {
-    NativeAndroidBaseArchitectureTheme {
+    RegoTheme {
         LoginOptionScreen(onLogin = {}, onSignUp = {}, onTermsClicked = {}, onPrivacyClicked = {})
     }
 }

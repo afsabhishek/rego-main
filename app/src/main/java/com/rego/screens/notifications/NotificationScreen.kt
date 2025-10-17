@@ -44,7 +44,7 @@ import com.rego.ui.theme.Color1A1A1A
 import com.rego.ui.theme.Color1A1A1A_60
 import com.rego.ui.theme.Color1A1A1A_90
 import com.rego.ui.theme.ColorFBFBFB
-import com.rego.ui.theme.NativeAndroidBaseArchitectureTheme
+import com.rego.ui.theme.RegoTheme
 import com.rego.ui.theme.fontRegularMontserrat
 import com.rego.ui.theme.fontSemiBoldMontserrat
 import org.koin.androidx.compose.koinViewModel
@@ -279,7 +279,7 @@ fun NotificationCard(
 @Preview(showBackground = true)
 @Composable
 fun NotificationScreenPreview() {
-    NativeAndroidBaseArchitectureTheme {
+    RegoTheme {
         NotificationScreen()
     }
 }
@@ -287,7 +287,7 @@ fun NotificationScreenPreview() {
 @Preview(showBackground = true)
 @Composable
 fun NotificationCardPreview() {
-    NativeAndroidBaseArchitectureTheme {
+    RegoTheme {
         Column(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)

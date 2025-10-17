@@ -45,7 +45,7 @@ import com.rego.screens.components.DashedDivider
 import com.rego.screens.main.home.data.LeadsResponse
 import com.rego.ui.theme.Color1A1A1A_60
 import com.rego.ui.theme.Color1A1A1A_90
-import com.rego.ui.theme.NativeAndroidBaseArchitectureTheme
+import com.rego.ui.theme.RegoTheme
 import com.rego.ui.theme.fontSemiBoldMontserrat
 import com.rego.ui.theme.fontSemiBoldPoppins
 import org.koin.androidx.compose.koinViewModel
@@ -415,7 +415,7 @@ fun getStatusColor(status: String): Color {
 @Preview
 @Composable
 fun PreviewOrderDetailsScreen() {
-    NativeAndroidBaseArchitectureTheme {
+    RegoTheme {
         OrderDetailsScreen(orderId = "12345", onBack = {})
     }
 }

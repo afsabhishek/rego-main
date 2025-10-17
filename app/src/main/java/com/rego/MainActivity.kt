@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
 import com.rego.navigation.AppNavHost
-import com.rego.ui.theme.NativeAndroidBaseArchitectureTheme
+import com.rego.ui.theme.RegoTheme
 
 class MainActivity : ComponentActivity() {
     @Suppress("UnusedMaterial3ScaffoldPaddingParameter")
@@ -20,7 +20,7 @@ class MainActivity : ComponentActivity() {
             window.isNavigationBarContrastEnforced = false
         }
         setContent {
-            NativeAndroidBaseArchitectureTheme {
+            RegoTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { _ ->
                     AppNavHost()
                 }

@@ -776,7 +776,7 @@ fun getPartTypeIcon(slug: String): Int {
 @Preview(showBackground = true)
 @Composable
 fun RaiseRequestScreenPreview() {
-    NativeAndroidBaseArchitectureTheme {
+    RegoTheme {
         RaiseRequestScreen()
     }
 }
