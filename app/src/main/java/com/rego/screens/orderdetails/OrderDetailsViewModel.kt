@@ -24,7 +24,7 @@ class OrderDetailsViewModel(
             }
 
             is OrderDetailsEvent.LoadLeadsByStatus -> {
-                loadLeadsByStatus(event.status, event.page)
+                loadLeadsByStatus(event.status, partType = null)
             }
 
             is OrderDetailsEvent.RetryLoadDetails -> {
@@ -75,19 +75,22 @@ class OrderDetailsViewModel(
         }
     }
 
-    private fun loadLeadsByStatus(status: String?, page: Int = 1, append: Boolean = false) {
-        viewModelScope.launch {
-            if (!append) {
-                setState { copy(currentStatus = status, currentPage = page) }
-            }
 
-            interactor.getLeadsByStatus(status, page).collect { dataState ->
+    fun loadLeadsByStatusWithPartType(status: String?, partType: String?) {
+        loadLeadsByStatus(status, partType)
+    }
+
+    private fun loadLeadsByStatus(status: String?, partType: String? = null) {
+        viewModelScope.launch {
+
+            setState { copy(currentStatus = status, currentPartType = partType) }
+
+            interactor.getLeadsByStatus(status, partType).collect { dataState ->
                 when (dataState) {
                     is DataState.Loading -> {
                         setState {
                             copy(
-                                progressBarState = dataState.progressBarState,
-                                isLoadingMore = append
+                                progressBarState = dataState.progressBarState
                             )
                         }
                     }
@@ -97,9 +100,8 @@ class OrderDetailsViewModel(
 
                         setState {
                             copy(
-                                leads = if (append) leads + newLeads else newLeads,
+                                leads = newLeads,
                                 pagination = dataState.data?.pagination,
-                                currentPage = dataState.data?.pagination?.currentPage ?: page,
                                 hasMorePages = dataState.data?.pagination?.hasNextPage ?: false,
                                 progressBarState = ProgressBarState.Idle,
                                 isLoadingMore = false,
@@ -116,9 +118,7 @@ class OrderDetailsViewModel(
                                 error = "Failed to load leads"
                             )
                         }
-                        if (!append) {
-                            setError { dataState.uiComponent }
-                        }
+                        setError { dataState.uiComponent }
                     }
 
                     else -> {}
@@ -133,8 +133,7 @@ class OrderDetailsViewModel(
         val nextPage = state.value.currentPage + 1
         loadLeadsByStatus(
             status = state.value.currentStatus,
-            page = nextPage,
-            append = true
+            partType = state.value.currentPartType
         )
     }
 }

@@ -44,7 +44,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.rego.R
@@ -54,7 +53,6 @@ import com.rego.screens.main.home.data.LeadStatus
 import com.rego.screens.main.home.data.LeadsResponse
 import com.rego.ui.theme.Color00954D
 import com.rego.ui.theme.Color1A1A1A_40
-import com.rego.ui.theme.RegoTheme
 import com.rego.ui.theme.fontBoldPoppins
 import com.rego.ui.theme.fontSemiBoldMontserrat
 import kotlinx.coroutines.launch
@@ -65,15 +63,15 @@ import java.util.Locale
 data class PartTypeTab(
     val name: String,
     val iconRes: Int,
-    val status: String
+    val partType: String
 )
 
-// Map tabs to actual lead statuses from the API
+// ✅ Map tabs to actual PART TYPES (not statuses)
 val partTypeTabs = listOf(
-    PartTypeTab("Work In Progress", R.drawable.alloy_wheel, LeadStatus.WORK_IN_PROGRESS.value),
-    PartTypeTab("Pickup Aligned", R.drawable.car_light, LeadStatus.PICKUP_ALIGNED.value),
-    PartTypeTab("Part Delivered", R.drawable.car_bumper, LeadStatus.PART_DELIVERED.value),
-    PartTypeTab("Ready for Delivery", R.drawable.car_seat, LeadStatus.READY_FOR_DELIVERY.value)
+    PartTypeTab("Alloy Wheels", R.drawable.alloy_wheel, "alloy_wheels"),
+    PartTypeTab("Headlamps", R.drawable.car_light, "headlamps"),
+    PartTypeTab("Plastic Repair", R.drawable.car_bumper, "plastic"),
+    PartTypeTab("Leather & Fabric", R.drawable.car_seat, "leather_fabric")
 )
 
 @SuppressLint("DefaultLocale")
@@ -91,11 +89,34 @@ fun OrderListScreen(
     val listState = rememberLazyListState()
     val currentTab = remember { androidx.compose.runtime.mutableStateOf(0) }
 
+    // ✅ FIXED: Determine which status to load based on orderType
+    val initialStatus = when (orderType) {
+        "New Leads" -> LeadStatus.NEW.value
+        "Total Leads" -> null  // All leads
+        "Approved" -> LeadStatus.APPROVED.value
+        "Not Repairable" -> LeadStatus.NOT_REPAIRABLE.value
+        "Completed" -> LeadStatus.COMPLETED.value
+        "Work in Progress" -> LeadStatus.WORK_IN_PROGRESS.value
+        "Pickup Aligned" -> LeadStatus.PICKUP_ALIGNED.value
+        "Part Delivered" -> LeadStatus.PART_DELIVERED.value
+        "Ready for Delivery" -> LeadStatus.READY_FOR_DELIVERY.value
+        else -> {
+            // Try to map from quick filters or default
+            mapQuickFilterToStatus(orderType)
+        }
+    }
+
+    // ✅ FIXED: Determine if we should show tabs
+    val showTabs = when (orderType) {
+        "Ongoing Orders", "Total Leads" -> true
+        else -> false
+    }
+
     LaunchedEffect(Unit) {
-        // Load first tab data on init
+        println("📥 Loading orders for: $orderType (status: $initialStatus, showTabs: $showTabs)")
         viewModel.setEvent(
             OrderDetailsEvent.LoadLeadsByStatus(
-                status = partTypeTabs[0].status,
+                status = initialStatus,
                 page = 1
             )
         )
@@ -152,7 +173,7 @@ fun OrderListScreen(
                 .background(Color.White)
                 .padding(innerPadding)
         ) {
-            // Green header with tabs
+            // ✅ Show tabs ALWAYS (for all statuses)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -185,11 +206,11 @@ fun OrderListScreen(
                             onClick = {
                                 currentTab.value = index
                                 coroutineScope.launch {
-                                    viewModel.setEvent(
-                                        OrderDetailsEvent.LoadLeadsByStatus(
-                                            status = partType.status,
-                                            page = 1
-                                        )
+                                    println("🔄 Tab clicked: ${partType.name} - Loading part type: ${partType.partType}")
+                                    // ✅ Load leads filtered by part type AND initial status
+                                    viewModel.loadLeadsByStatusWithPartType(
+                                        status = initialStatus,
+                                        partType = partType.partType
                                     )
                                 }
                             },
@@ -324,14 +345,14 @@ fun OrderListScreen(
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
                                 text = state.error ?: "Failed to load orders",
-                                color = Color.Gray
+                                color = Color.Black
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             androidx.compose.material3.TextButton(
                                 onClick = {
                                     viewModel.setEvent(
                                         OrderDetailsEvent.LoadLeadsByStatus(
-                                            status = partTypeTabs[currentTab.value].status,
+                                            status = initialStatus,
                                             page = 1
                                         )
                                     )
@@ -439,8 +460,8 @@ fun mapLeadToOrderData(lead: LeadsResponse.LeadsData.Lead): OrderData {
         status = formatStatus(lead.status),
         carMake = "${lead.vehicle.make} ${lead.vehicle.model}, ${lead.makeYear}",
         deliveryDate = formatDate(lead.activity.lastUpdatedAt),
-        dealerName = lead.dealer?.name,
-        dealerLocation = lead.dealer?.location
+        dealerName = lead.dealer?.name ?: "N/A",
+        dealerLocation = lead.dealer?.location ?: "N/A"
     )
 }
 
@@ -472,10 +493,15 @@ fun formatDate(dateString: String?): String {
     }
 }
 
-@Preview
-@Composable
-fun PreviewOrderListScreen() {
-    RegoTheme {
-        OrderListScreen()
+// ✅ Helper function to map quick filter names to API status
+private fun mapQuickFilterToStatus(filterName: String): String? {
+    return when (filterName) {
+        "Work In Progress" -> LeadStatus.WORK_IN_PROGRESS.value
+        "Pickup Aligned" -> LeadStatus.PICKUP_ALIGNED.value
+        "Part Delivered" -> LeadStatus.PART_DELIVERED.value
+        "Pickup Done" -> LeadStatus.PICKUP_DONE.value
+        "Invoice Generated" -> LeadStatus.INVOICE_GENERATED.value
+        "Ready for Delivery" -> LeadStatus.READY_FOR_DELIVERY.value
+        else -> null
     }
 }

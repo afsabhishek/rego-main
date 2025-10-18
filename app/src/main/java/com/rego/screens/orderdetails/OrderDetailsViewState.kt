@@ -11,6 +11,7 @@ data class OrderDetailsViewState(
     val selectedLeadId: String? = null,
     val selectedLead: LeadsResponse.LeadsData.Lead? = null,
     val currentStatus: String? = null,
+    val currentPartType: String? = null,  // ✅ ADDED: Part type filter
     val leads: List<LeadsResponse.LeadsData.Lead> = emptyList(),
     val pagination: LeadsResponse.LeadsData.Pagination? = null,
     val currentPage: Int = 1,

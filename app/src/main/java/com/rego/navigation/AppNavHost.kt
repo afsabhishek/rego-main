@@ -112,6 +112,7 @@ fun AppNavHost() {
                 },
                 onSearchClick = { },
                 onOrderListClick = { orderType ->
+                    // ✅ FIXED: Navigate to OrdersList with the card label/filter
                     navController.navigate(Destinations.OrdersList.createRoute(orderType))
                 },
                 onNotificationClick = {

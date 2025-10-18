@@ -63,8 +63,7 @@ class OrderDetailsInteractor(
 
     fun getLeadsByStatus(
         status: String?,
-        page: Int = 1,
-        limit: Int = 20
+        partType: String? = null  // ✅ ADDED: Part type parameter
     ): Flow<DataState<LeadsResponse.LeadsData>> = flow {
         try {
             emit(DataState.Loading(progressBarState = ProgressBarState.Loading))
@@ -83,7 +82,7 @@ class OrderDetailsInteractor(
                 return@flow
             }
 
-            val response = api.getLeadsByStatus(authToken, status, page, limit)
+            val response = api.getLeadsByStatus(authToken, status, partType)
 
             if (response.success && response.data != null) {
                 emit(DataState.Data(response.data))

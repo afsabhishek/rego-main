@@ -103,8 +103,11 @@ fun HomeScreen(
                 onOrderListClick = onOrderListClick,
                 onNotificationClick = onNotificationClick,
                 onFilterClick = { filter ->
-                    println("🔍 Filter clicked in HomeScreen: $filter")
-                    events(HomeEvent.FilterLeads(filter))
+                    println("🔍 Card clicked: $filter")
+                    // ✅ FIXED: Navigate to OrdersList with filter
+                    if (filter != null) {
+                        onOrderListClick(filter)
+                    }
                 }
             )
         }
@@ -300,6 +303,7 @@ fun HomeScreenContent(
                                                     value = value,
                                                     onClick = {
                                                         println("🔍 Card clicked: $label")
+                                                        // ✅ FIXED: Navigate to OrdersList
                                                         onFilterClick(label)
                                                     },
                                                     modifier = Modifier.weight(1f)
@@ -326,6 +330,7 @@ fun HomeScreenContent(
                                                     value = value,
                                                     onClick = {
                                                         println("🔍 Card clicked: $label")
+                                                        // ✅ FIXED: Navigate to OrdersList
                                                         onFilterClick(label)
                                                     },
                                                     modifier = Modifier.weight(1f)
@@ -378,6 +383,7 @@ fun HomeScreenContent(
                                 style = fontSemiBoldMontserrat().copy(fontSize = 12.sp),
                                 color = Color(0xFF00954D),
                                 modifier = Modifier.clickable {
+                                    // Navigate to all orders
                                     onOrderListClick("Ongoing Orders")
                                 }
                             )
@@ -421,7 +427,8 @@ fun HomeScreenContent(
                                             )
                                             .clickable {
                                                 println("🔍 Quick filter clicked: $filter")
-                                                onFilterClick(if (selected) null else filter)
+                                                // ✅ Navigate to OrdersList with status
+                                                onOrderListClick(filter)
                                             }
                                     ) {
                                         Text(

@@ -36,14 +36,18 @@ class OrderDetailsApiImpl(
     override suspend fun getLeadsByStatus(
         authToken: String,
         status: String?,
-        page: Int,
-        limit: Int
+        partType: String?  // ✅ ADDED: Part type parameter
     ): LeadsResponse {
         return try {
             val response = ktorClient.client.get {
                 url("${NetworkConfig.BASE_URL}${ApiRoutes.GET_LEADS}")
                 header(HttpHeaders.Authorization, "Bearer $authToken")
+
+                // ✅ Add status filter
                 status?.let { parameter("status", it) }
+
+                // ✅ ADDED: Add part type filter
+                partType?.let { parameter("partType", it) }
             }
             response.body<LeadsResponse>()
         } catch (e: Exception) {
