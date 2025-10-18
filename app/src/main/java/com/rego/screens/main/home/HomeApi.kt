@@ -5,12 +5,11 @@ import com.rego.screens.main.home.data.LeadsResponse
 
 interface HomeApi {
     suspend fun getLeadStats(authToken: String): LeadStatsResponse
+
     suspend fun getLeads(
         authToken: String,
-        status: String? = null,
+        status: List<String>? = null,  // ✅ Changed to List<String>
         partType: String? = null,
-        registrationNumber: String? = null,
-        claimNumber: String? = null,
         page: Int = 1,
         limit: Int = 20
     ): LeadsResponse

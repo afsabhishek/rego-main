@@ -10,11 +10,14 @@ data class OrderDetailsViewState(
     val progressBarState: ProgressBarState = ProgressBarState.Idle,
     val selectedLeadId: String? = null,
     val selectedLead: LeadsResponse.LeadsData.Lead? = null,
-    val currentStatus: String? = null,
-    val currentPartType: String? = null,  // ✅ ADDED: Part type filter
+
+    // ✅ Updated to List<String>
+    val currentStatus: List<String>? = null,
+    val currentPartType: String? = null,
+    val currentPage: Int = 1,
+
     val leads: List<LeadsResponse.LeadsData.Lead> = emptyList(),
     val pagination: LeadsResponse.LeadsData.Pagination? = null,
-    val currentPage: Int = 1,
     val hasMorePages: Boolean = false,
     val isLoadingMore: Boolean = false,
     val error: String? = null

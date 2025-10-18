@@ -65,10 +65,8 @@ class HomeInteractor(
     }
 
     fun getLeadsList(
-        status: String? = null,
+        status: List<String>? = null,  // ✅ Changed to List<String>
         partType: String? = null,
-        registrationNumber: String? = null,
-        claimNumber: String? = null,
         page: Int = 1,
         limit: Int = 20,
         showLoading: Boolean = true
@@ -96,8 +94,6 @@ class HomeInteractor(
                 authToken = authToken,
                 status = status,
                 partType = partType,
-                registrationNumber = registrationNumber,
-                claimNumber = claimNumber,
                 page = page,
                 limit = limit
             )

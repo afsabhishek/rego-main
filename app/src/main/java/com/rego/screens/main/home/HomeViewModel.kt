@@ -130,7 +130,7 @@ class HomeViewModel(
         }
     }
 
-    private fun loadOngoingLeads(status: String? = null, page: Int = 1, append: Boolean = false) {
+    private fun loadOngoingLeads(status: List<String>? = null, page: Int = 1, append: Boolean = false) {
         viewModelScope.launch {
             println("📥 loadOngoingLeads called with status: $status")
 
@@ -204,10 +204,10 @@ class HomeViewModel(
         }
     }
 
-    private fun filterLeadsByStatus(status: String?) {
-        println("🔍 filterLeadsByStatus called with: $status")
+    private fun filterLeadsByStatus(filterLabel: String?) {
+        println("🔍 filterLeadsByStatus called with: $filterLabel")
 
-        if (status == null) {
+        if (filterLabel == null) {
             setState {
                 copy(
                     ongoingOrdersFiltered = null,
@@ -217,34 +217,49 @@ class HomeViewModel(
             }
             loadOngoingLeads(null)
         } else {
-            // ✅ FIXED: Map the card label to API status format
-            val apiStatus = mapStatusKeyToApiFormat(status)
-            println("🔍 Mapped card label '$status' to API status: $apiStatus")
+            // ✅ Map the card label to API status format
+            val apiStatuses = mapStatusKeyToApiFormat(filterLabel)
+            println("🔍 Mapped card label '$filterLabel' to API statuses: $apiStatuses")
 
             setState {
                 copy(
-                    selectedFilter = status,
+                    selectedFilter = filterLabel,
                     currentPage = 1
                 )
             }
 
-            loadOngoingLeads(apiStatus)
+            loadOngoingLeads(apiStatuses)
         }
     }
 
     /**
-     * ✅ Maps card label to API status format
-     * This is called when user clicks on summary cards
+     * ✅ Maps card label to list of API status values
+     * This is called when user clicks on a summary card
      */
-    private fun mapStatusKeyToApiFormat(statusKey: String): String {
+    private fun mapStatusKeyToApiFormat(statusKey: String): List<String> {
         return when (statusKey) {
-            "New Leads" -> "NEW"
-            "Total Leads" -> ""  // Empty string = all leads
-            "Approved" -> "APPROVED"
-            "Not Repairable" -> "REJECTED"
-            "Completed" -> "DELIVERED"
-            "Work in Progress" -> "WORK_IN_PROGRESS"
-            else -> statusKey.uppercase().replace(" ", "_")
+            "New Leads" -> listOf("NEW")
+            "Total Leads" -> emptyList()  // Empty list = all leads
+            "Approved" -> listOf(
+                "PICKUP_ALIGNED",
+                "PICKUP_DONE",
+                "WORK_IN_PROGRESS",
+                "READY_FOR_DELIVERY",
+                "INVOICE_GENERATED",
+                "PHYSICAL_INSPECTION_ALIGNED",
+                "DELIVERED"
+            )
+            "Not Repairable" -> listOf("REJECTED")
+            "Completed" -> listOf("DELIVERED")
+            "Work in Progress" -> listOf(
+                "PICKUP_ALIGNED",
+                "PHYSICAL_INSPECTION_ALIGNED",
+                "PICKUP_DONE",
+                "WORK_IN_PROGRESS",
+                "READY_FOR_DELIVERY",
+                "INVOICE_GENERATED"
+            )
+            else -> emptyList()
         }
     }
 
@@ -302,19 +317,19 @@ class HomeViewModel(
     }
 
     private fun handleCardClick(cardType: String) {
+        println("📊 Card clicked: $cardType")
+
+        // ✅ Get the status array for this card from stats
+        val statItem = state.value.leadStatsItems?.find { it.label == cardType }
+        val statusesToLoad = statItem?.status ?: emptyList()
+
+        println("📊 Loading leads for card: $cardType with statuses: $statusesToLoad")
+
+        // Navigate to OrderList and pass the card label as filter type
         setAction { HomeAction.NavigateToOrderList(cardType) }
 
-        // Load leads for the selected card type
-        val statItem = state.value.leadStatsItems?.find { it.label == cardType }
-        if (statItem != null && statItem.status.isNotEmpty()) {
-            // ✅ FIXED: Pass the status from the card
-            val statusToLoad = statItem.status.first()
-            println("📊 Loading leads for card: $cardType with status: $statusToLoad")
-            loadOngoingLeads(statusToLoad, page = 1)
-        } else if (cardType == "Total Leads") {
-            println("📊 Loading all leads for Total Leads card")
-            loadOngoingLeads(null)
-        }
+        // Load leads for the selected card
+        loadOngoingLeads(if (statusesToLoad.isEmpty()) null else statusesToLoad, page = 1)
     }
 
     private fun handleOrderClick(orderId: String) {
@@ -347,15 +362,15 @@ class HomeViewModel(
         )
     }
 
-    private fun getStatusesForFilter(filterLabel: String): String {
+    private fun getStatusesForFilter(filterLabel: String): List<String> {
         return when (filterLabel) {
-            "Work In Progress" -> "WORK_IN_PROGRESS"
-            "Pickup Aligned" -> "PICKUP_ALIGNED"
-            "Part Delivered" -> "PART_DELIVERED"
-            "Pickup Done" -> "PICKUP_DONE"
-            "Invoice Generated" -> "INVOICE_GENERATED"
-            "Ready for Delivery" -> "READY_FOR_DELIVERY"
-            else -> filterLabel.uppercase().replace(" ", "_")
+            "Work In Progress" -> listOf("WORK_IN_PROGRESS")
+            "Pickup Aligned" -> listOf("PICKUP_ALIGNED")
+            "Part Delivered" -> listOf("PART_DELIVERED")
+            "Pickup Done" -> listOf("PICKUP_DONE")
+            "Invoice Generated" -> listOf("INVOICE_GENERATED")
+            "Ready for Delivery" -> listOf("READY_FOR_DELIVERY")
+            else -> emptyList()
         }
     }
 

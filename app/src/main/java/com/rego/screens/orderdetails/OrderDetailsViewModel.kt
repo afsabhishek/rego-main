@@ -24,6 +24,7 @@ class OrderDetailsViewModel(
             }
 
             is OrderDetailsEvent.LoadLeadsByStatus -> {
+                // ✅ Updated to accept List<String> for status
                 loadLeadsByStatus(event.status, partType = null)
             }
 
@@ -75,13 +76,12 @@ class OrderDetailsViewModel(
         }
     }
 
-
-    fun loadLeadsByStatusWithPartType(status: String?, partType: String?) {
-        loadLeadsByStatus(status, partType)
-    }
-
-    private fun loadLeadsByStatus(status: String?, partType: String? = null) {
+    // ✅ Updated to accept List<String> for status
+    private fun loadLeadsByStatus(status: List<String>? = null, partType: String? = null) {
         viewModelScope.launch {
+            println("📥 loadLeadsByStatus called")
+            println("   Status: $status")
+            println("   PartType: $partType")
 
             setState { copy(currentStatus = status, currentPartType = partType) }
 
@@ -97,6 +97,7 @@ class OrderDetailsViewModel(
 
                     is DataState.Data -> {
                         val newLeads = dataState.data?.leads ?: emptyList()
+                        println("✅ Leads received: ${newLeads.size} items")
 
                         setState {
                             copy(
@@ -127,13 +128,53 @@ class OrderDetailsViewModel(
         }
     }
 
+    // ✅ New public function to load with BOTH status and part type
+    fun loadLeadsByStatusWithPartType(status: List<String>? = null, partType: String?) {
+        println("📥 loadLeadsByStatusWithPartType called")
+        println("   Status: $status")
+        println("   PartType: $partType")
+
+        loadLeadsByStatus(status = status, partType = partType)
+    }
+
     private fun loadMoreLeads() {
         if (state.value.isLoadingMore || !state.value.hasMorePages) return
 
         val nextPage = state.value.currentPage + 1
-        loadLeadsByStatus(
-            status = state.value.currentStatus,
-            partType = state.value.currentPartType
-        )
+
+        viewModelScope.launch {
+            setState { copy(isLoadingMore = true) }
+
+            // ✅ Load next page with current filters
+            interactor.getLeadsByStatus(
+                status = state.value.currentStatus,
+                partType = state.value.currentPartType,
+                page = nextPage
+            ).collect { dataState ->
+                when (dataState) {
+                    is DataState.Data -> {
+                        dataState.data?.let { leadsData ->
+                            val newLeads = leadsData.leads
+
+                            setState {
+                                copy(
+                                    leads = state.value.leads + newLeads,
+                                    pagination = leadsData.pagination,
+                                    currentPage = leadsData.pagination.currentPage,
+                                    hasMorePages = leadsData.pagination.hasNextPage,
+                                    isLoadingMore = false
+                                )
+                            }
+                        }
+                    }
+
+                    is DataState.Error -> {
+                        setState { copy(isLoadingMore = false) }
+                    }
+
+                    else -> {}
+                }
+            }
+        }
     }
 }

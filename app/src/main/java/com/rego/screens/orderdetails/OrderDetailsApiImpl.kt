@@ -35,23 +35,44 @@ class OrderDetailsApiImpl(
 
     override suspend fun getLeadsByStatus(
         authToken: String,
-        status: String?,
-        partType: String?  // ✅ ADDED: Part type parameter
+        status: List<String>?,  // ✅ Updated to List<String>
+        partType: String?,
+        page: Int,
+        limit: Int
     ): LeadsResponse {
         return try {
             val response = ktorClient.client.get {
                 url("${NetworkConfig.BASE_URL}${ApiRoutes.GET_LEADS}")
                 header(HttpHeaders.Authorization, "Bearer $authToken")
 
-                // ✅ Add status filter
-                status?.let { parameter("status", it) }
+                // ✅ Add pagination parameters - convert page to offset
+                parameter("offset", (page - 1) * limit)
+                parameter("limit", limit)
 
-                // ✅ ADDED: Add part type filter
-                partType?.let { parameter("partType", it) }
+                // ✅ Add status filter - if list is not null and not empty
+                status?.let { statusList ->
+                    if (statusList.isNotEmpty()) {
+                        println("📤 Adding status filters: $statusList")
+                        statusList.forEach { s ->
+                            parameter("status[]", s)
+                        }
+                    } else {
+                        println("📤 Empty status list - fetching all statuses")
+                    }
+                }
+
+                // ✅ Add part type filter
+                partType?.let {
+                    println("📤 Adding partType filter: $it")
+                    parameter("partType", it)
+                }
             }
+
+            println("📤 API Response: ${response.status}")
             response.body<LeadsResponse>()
         } catch (e: Exception) {
             e.printStackTrace()
+            println("❌ API Error: ${e.message}")
             LeadsResponse(
                 success = false,
                 data = null,

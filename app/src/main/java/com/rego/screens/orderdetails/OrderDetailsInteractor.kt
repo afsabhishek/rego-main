@@ -61,12 +61,18 @@ class OrderDetailsInteractor(
         }
     }
 
+    // ✅ Updated to accept List<String> for status
     fun getLeadsByStatus(
-        status: String?,
-        partType: String? = null  // ✅ ADDED: Part type parameter
+        status: List<String>? = null,
+        partType: String? = null,
+        page: Int = 1,
+        limit: Int = 20,
+        showLoading: Boolean = true
     ): Flow<DataState<LeadsResponse.LeadsData>> = flow {
         try {
-            emit(DataState.Loading(progressBarState = ProgressBarState.Loading))
+            if (showLoading) {
+                emit(DataState.Loading(progressBarState = ProgressBarState.Loading))
+            }
 
             val authToken = userPreferences.getAuthToken()
             if (authToken.isNullOrEmpty()) {
@@ -82,7 +88,18 @@ class OrderDetailsInteractor(
                 return@flow
             }
 
-            val response = api.getLeadsByStatus(authToken, status, partType)
+            println("📥 OrderDetailsInteractor.getLeadsByStatus")
+            println("   Status: $status")
+            println("   PartType: $partType")
+            println("   Page: $page")
+
+            val response = api.getLeadsByStatus(
+                authToken = authToken,
+                status = status,
+                partType = partType,
+                page = page,
+                limit = limit
+            )
 
             if (response.success && response.data != null) {
                 emit(DataState.Data(response.data))
@@ -108,7 +125,9 @@ class OrderDetailsInteractor(
                 )
             )
         } finally {
-            emit(DataState.Loading(progressBarState = ProgressBarState.Idle))
+            if (showLoading) {
+                emit(DataState.Loading(progressBarState = ProgressBarState.Idle))
+            }
         }
     }
 }

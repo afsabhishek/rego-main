@@ -49,7 +49,6 @@ import androidx.compose.ui.unit.sp
 import com.rego.R
 import com.rego.screens.components.OrderCard
 import com.rego.screens.components.OrderData
-import com.rego.screens.main.home.data.LeadStatus
 import com.rego.screens.main.home.data.LeadsResponse
 import com.rego.ui.theme.Color00954D
 import com.rego.ui.theme.Color1A1A1A_40
@@ -66,12 +65,12 @@ data class PartTypeTab(
     val partType: String
 )
 
-// ✅ Map tabs to actual PART TYPES (not statuses)
+// ✅ Map tabs to actual PART TYPES
 val partTypeTabs = listOf(
-    PartTypeTab("Alloy Wheels", R.drawable.alloy_wheel, "alloy_wheels"),
-    PartTypeTab("Headlamps", R.drawable.car_light, "headlamps"),
-    PartTypeTab("Plastic Repair", R.drawable.car_bumper, "plastic"),
-    PartTypeTab("Leather & Fabric", R.drawable.car_seat, "leather_fabric")
+    PartTypeTab("Alloy Wheels", R.drawable.alloy_wheel, "ALLOY_WHEELS"),
+    PartTypeTab("Headlamps", R.drawable.car_light, "HEADLAMPS"),
+    PartTypeTab("Plastic Repair", R.drawable.car_bumper, "PLASTIC"),
+    PartTypeTab("Leather & Fabric", R.drawable.car_seat, "LEATHER_FABRIC")
 )
 
 @SuppressLint("DefaultLocale")
@@ -89,34 +88,24 @@ fun OrderListScreen(
     val listState = rememberLazyListState()
     val currentTab = remember { androidx.compose.runtime.mutableStateOf(0) }
 
-    // ✅ FIXED: Determine which status to load based on orderType
-    val initialStatus = when (orderType) {
-        "New Leads" -> LeadStatus.NEW.value
-        "Total Leads" -> null  // All leads
-        "Approved" -> LeadStatus.APPROVED.value
-        "Not Repairable" -> LeadStatus.NOT_REPAIRABLE.value
-        "Completed" -> LeadStatus.COMPLETED.value
-        "Work in Progress" -> LeadStatus.WORK_IN_PROGRESS.value
-        "Pickup Aligned" -> LeadStatus.PICKUP_ALIGNED.value
-        "Part Delivered" -> LeadStatus.PART_DELIVERED.value
-        "Ready for Delivery" -> LeadStatus.READY_FOR_DELIVERY.value
-        else -> {
-            // Try to map from quick filters or default
-            mapQuickFilterToStatus(orderType)
-        }
-    }
+    // ✅ Determine which status array to load based on orderType
+    val initialStatus = mapOrderTypeToStatuses(orderType)
 
-    // ✅ FIXED: Determine if we should show tabs
+    // ✅ Track if we should show tabs (for specific order types)
     val showTabs = when (orderType) {
         "Ongoing Orders", "Total Leads" -> true
-        else -> false
+        else -> true  // Show tabs for all card-based filters
     }
 
     LaunchedEffect(Unit) {
-        println("📥 Loading orders for: $orderType (status: $initialStatus, showTabs: $showTabs)")
+        println("📥 OrderListScreen loading for: $orderType")
+        println("📥 Status array: $initialStatus")
+        println("📥 Show tabs: $showTabs")
+
+        // Load initial data with the status from card
         viewModel.setEvent(
             OrderDetailsEvent.LoadLeadsByStatus(
-                status = initialStatus,
+                status = if (initialStatus.isEmpty()) null else initialStatus,
                 page = 1
             )
         )
@@ -173,79 +162,83 @@ fun OrderListScreen(
                 .background(Color.White)
                 .padding(innerPadding)
         ) {
-            // ✅ Show tabs ALWAYS (for all statuses)
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(
-                        shape = RoundedCornerShape(bottomStart = 12.dp, bottomEnd = 12.dp),
-                        color = Color00954D
-                    )
-            ) {
-                TabRow(
-                    modifier = Modifier.padding(horizontal = 12.dp),
-                    selectedTabIndex = currentTab.value,
-                    containerColor = Color.Transparent,
-                    contentColor = Color.White,
-                    indicator = { tabPositions ->
-                        TabRowDefaults.Indicator(
-                            modifier = Modifier
-                                .tabIndicatorOffset(tabPositions[currentTab.value])
-                                .background(
-                                    color = Color.White,
-                                    shape = RoundedCornerShape(topEnd = 12.dp, topStart = 12.dp)
-                                ),
-                            color = Color.White,
-                            height = 5.dp
+            // ✅ Show tabs ALWAYS for part type filtering
+            if (showTabs) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            shape = RoundedCornerShape(bottomStart = 12.dp, bottomEnd = 12.dp),
+                            color = Color00954D
                         )
-                    }
                 ) {
-                    partTypeTabs.forEachIndexed { index, partType ->
-                        Tab(
-                            selected = currentTab.value == index,
-                            onClick = {
-                                currentTab.value = index
-                                coroutineScope.launch {
-                                    println("🔄 Tab clicked: ${partType.name} - Loading part type: ${partType.partType}")
-                                    // ✅ Load leads filtered by part type AND initial status
-                                    viewModel.loadLeadsByStatusWithPartType(
-                                        status = initialStatus,
-                                        partType = partType.partType
-                                    )
-                                }
-                            },
-                            modifier = Modifier.padding(vertical = 16.dp)
-                        ) {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                modifier = Modifier.padding(vertical = 8.dp)
+                    TabRow(
+                        modifier = Modifier.padding(horizontal = 12.dp),
+                        selectedTabIndex = currentTab.value,
+                        containerColor = Color.Transparent,
+                        contentColor = Color.White,
+                        indicator = { tabPositions ->
+                            TabRowDefaults.Indicator(
+                                modifier = Modifier
+                                    .tabIndicatorOffset(tabPositions[currentTab.value])
+                                    .background(
+                                        color = Color.White,
+                                        shape = RoundedCornerShape(topEnd = 12.dp, topStart = 12.dp)
+                                    ),
+                                color = Color.White,
+                                height = 5.dp
+                            )
+                        }
+                    ) {
+                        partTypeTabs.forEachIndexed { index, partType ->
+                            Tab(
+                                selected = currentTab.value == index,
+                                onClick = {
+                                    currentTab.value = index
+                                    coroutineScope.launch {
+                                        println("🔄 Tab clicked: ${partType.name}")
+                                        println("🔄 Loading with status: $initialStatus and partType: ${partType.partType}")
+
+                                        // ✅ Load leads with BOTH status and part type
+                                        viewModel.loadLeadsByStatusWithPartType(
+                                            status = if (initialStatus.isEmpty()) null else initialStatus,
+                                            partType = partType.partType
+                                        )
+                                    }
+                                },
+                                modifier = Modifier.padding(vertical = 16.dp)
                             ) {
-                                Box(
-                                    modifier = Modifier.background(
-                                        color = if (currentTab.value == index) Color.White else Color.White.copy(
-                                            alpha = 0.13f
-                                        ), shape = CircleShape
-                                    )
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    modifier = Modifier.padding(vertical = 8.dp)
                                 ) {
-                                    Icon(
-                                        painter = painterResource(id = partType.iconRes),
-                                        contentDescription = partType.name,
-                                        modifier = Modifier
-                                            .padding(6.dp)
-                                            .size(28.dp),
-                                        tint = if (currentTab.value == index) Color00954D else Color.White
+                                    Box(
+                                        modifier = Modifier.background(
+                                            color = if (currentTab.value == index) Color.White else Color.White.copy(
+                                                alpha = 0.13f
+                                            ), shape = CircleShape
+                                        )
+                                    ) {
+                                        Icon(
+                                            painter = painterResource(id = partType.iconRes),
+                                            contentDescription = partType.name,
+                                            modifier = Modifier
+                                                .padding(6.dp)
+                                                .size(28.dp),
+                                            tint = if (currentTab.value == index) Color00954D else Color.White
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.height(10.dp))
+                                    Text(
+                                        modifier = Modifier.height(26.dp),
+                                        text = partType.name,
+                                        style = if (currentTab.value == index) fontBoldPoppins().copy(
+                                            color = Color.White
+                                        ) else fontSemiBoldMontserrat().copy(color = Color.White.copy(alpha = 0.8f)),
+                                        textAlign = TextAlign.Center,
+                                        fontSize = 10.sp
                                     )
                                 }
-                                Spacer(modifier = Modifier.height(10.dp))
-                                Text(
-                                    modifier = Modifier.height(26.dp),
-                                    text = partType.name,
-                                    style = if (currentTab.value == index) fontBoldPoppins().copy(
-                                        color = Color.White
-                                    ) else fontSemiBoldMontserrat().copy(color = Color.White.copy(alpha = 0.8f)),
-                                    textAlign = TextAlign.Center,
-                                    fontSize = 10.sp
-                                )
                             }
                         }
                     }
@@ -352,7 +345,7 @@ fun OrderListScreen(
                                 onClick = {
                                     viewModel.setEvent(
                                         OrderDetailsEvent.LoadLeadsByStatus(
-                                            status = initialStatus,
+                                            status = if (initialStatus.isEmpty()) null else initialStatus,
                                             page = 1
                                         )
                                     )
@@ -428,7 +421,7 @@ fun OrderListContent(
                 items(leads) { lead ->
                     OrderCard(
                         order = mapLeadToOrderData(lead),
-                        orderType = formatStatus(lead.status),
+                        orderType = lead.partType,  // ✅ Use actual part type from lead
                         isExpanded = true,
                         onToggleExpanded = {},
                         onCardClick = { onOrderClick(lead.leadId) },
@@ -493,15 +486,43 @@ fun formatDate(dateString: String?): String {
     }
 }
 
-// ✅ Helper function to map quick filter names to API status
-private fun mapQuickFilterToStatus(filterName: String): String? {
-    return when (filterName) {
-        "Work In Progress" -> LeadStatus.WORK_IN_PROGRESS.value
-        "Pickup Aligned" -> LeadStatus.PICKUP_ALIGNED.value
-        "Part Delivered" -> LeadStatus.PART_DELIVERED.value
-        "Pickup Done" -> LeadStatus.PICKUP_DONE.value
-        "Invoice Generated" -> LeadStatus.INVOICE_GENERATED.value
-        "Ready for Delivery" -> LeadStatus.READY_FOR_DELIVERY.value
-        else -> null
+// ✅ Helper function to map orderType (card label) to status array
+fun mapOrderTypeToStatuses(orderType: String): List<String> {
+    return when (orderType) {
+        "New Leads" -> listOf("NEW")
+        "Total Leads" -> emptyList()  // Empty = all statuses
+        "Approved" -> listOf(
+            "PICKUP_ALIGNED",
+            "PICKUP_DONE",
+            "WORK_IN_PROGRESS",
+            "READY_FOR_DELIVERY",
+            "INVOICE_GENERATED",
+            "PHYSICAL_INSPECTION_ALIGNED",
+            "DELIVERED"
+        )
+        "Not Repairable" -> listOf("REJECTED")
+        "Completed" -> listOf("DELIVERED")
+        "Work in Progress" -> listOf(
+            "PICKUP_ALIGNED",
+            "PHYSICAL_INSPECTION_ALIGNED",
+            "PICKUP_DONE",
+            "WORK_IN_PROGRESS",
+            "READY_FOR_DELIVERY",
+            "INVOICE_GENERATED"
+        )
+        "Work In Progress" -> listOf(
+            "PICKUP_ALIGNED",
+            "PHYSICAL_INSPECTION_ALIGNED",
+            "PICKUP_DONE",
+            "WORK_IN_PROGRESS",
+            "READY_FOR_DELIVERY",
+            "INVOICE_GENERATED"
+        )
+        "Pickup Aligned" -> listOf("PICKUP_ALIGNED")
+        "Part Delivered" -> listOf("PART_DELIVERED")
+        "Pickup Done" -> listOf("PICKUP_DONE")
+        "Invoice Generated" -> listOf("INVOICE_GENERATED")
+        "Ready for Delivery" -> listOf("READY_FOR_DELIVERY")
+        else -> emptyList()
     }
 }
