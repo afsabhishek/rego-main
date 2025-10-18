@@ -136,8 +136,20 @@ fun HomeScreenContent(
 ) {
     var expandedCard by remember { mutableStateOf<String?>(null) }
 
+    // ✅ NEW: Track selected filter for quick filters
+    var selectedQuickFilter by remember { mutableStateOf<String?>(null) }
+
     // Use the computed property from HomeViewState
     val displayOrders = state.displayOrders
+
+    // ✅ NEW: Filter orders based on quick filter selection
+    val filteredOrdersForQuickFilter = if (selectedQuickFilter != null) {
+        displayOrders.filter { order ->
+            order.status.replace(" ", "_").uppercase() == selectedQuickFilter?.replace(" ", "_")?.uppercase()
+        }
+    } else {
+        displayOrders
+    }
 
     Box(
         modifier = Modifier
@@ -278,8 +290,9 @@ fun HomeScreenContent(
                                             iconRes = iconRes,
                                             value = value,
                                             onClick = {
-                                                println("🔍 Card clicked: $label")
-                                                onFilterClick(label)
+                                                println("📊 Summary card clicked: $label")
+                                                // ✅ Navigate to OrdersList with filter
+                                                onOrderListClick(label)
                                             },
                                             modifier = Modifier.weight(1f)
                                         )
@@ -302,9 +315,9 @@ fun HomeScreenContent(
                                                     iconRes = iconRes,
                                                     value = value,
                                                     onClick = {
-                                                        println("🔍 Card clicked: $label")
-                                                        // ✅ FIXED: Navigate to OrdersList
-                                                        onFilterClick(label)
+                                                        println("📊 Summary card clicked: $label")
+                                                        // ✅ Navigate to OrdersList
+                                                        onOrderListClick(label)
                                                     },
                                                     modifier = Modifier.weight(1f)
                                                 )
@@ -329,9 +342,9 @@ fun HomeScreenContent(
                                                     iconRes = iconRes,
                                                     value = value,
                                                     onClick = {
-                                                        println("🔍 Card clicked: $label")
-                                                        // ✅ FIXED: Navigate to OrdersList
-                                                        onFilterClick(label)
+                                                        println("📊 Summary card clicked: $label")
+                                                        // ✅ Navigate to OrdersList
+                                                        onOrderListClick(label)
                                                     },
                                                     modifier = Modifier.weight(1f)
                                                 )
@@ -372,7 +385,7 @@ fun HomeScreenContent(
                             if (displayOrders.isNotEmpty()) {
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
-                                    text = "(${displayOrders.size})",
+                                    text = "(${filteredOrdersForQuickFilter.size})",
                                     style = fontSemiBoldMontserrat().copy(fontSize = 15.sp),
                                     color = Color(0xFFFF514F)
                                 )
@@ -383,7 +396,8 @@ fun HomeScreenContent(
                                 style = fontSemiBoldMontserrat().copy(fontSize = 12.sp),
                                 color = Color(0xFF00954D),
                                 modifier = Modifier.clickable {
-                                    // Navigate to all orders
+                                    // ✅ Reset filter and navigate to all orders
+                                    selectedQuickFilter = null
                                     onOrderListClick("Ongoing Orders")
                                 }
                             )
@@ -404,15 +418,17 @@ fun HomeScreenContent(
                     }
                 }
 
-                // Quick Filters
+                // ✅ UPDATED: Quick Filters - Only filter, don't navigate
                 if (displayOrders.isNotEmpty()) {
                     item {
                         Spacer(modifier = Modifier.height(10.dp))
-                        androidx.compose.foundation.lazy.LazyRow(contentPadding = PaddingValues(horizontal = 16.dp)) {
+                        androidx.compose.foundation.lazy.LazyRow(
+                            contentPadding = PaddingValues(horizontal = 16.dp)
+                        ) {
                             val quickFilters = state.quickFilters
                             if (quickFilters?.isNotEmpty() == true) {
                                 items(quickFilters) { filter ->
-                                    val selected = filter == state.selectedFilter
+                                    val selected = filter == selectedQuickFilter
                                     Box(
                                         modifier = Modifier
                                             .padding(end = 8.dp)
@@ -427,8 +443,8 @@ fun HomeScreenContent(
                                             )
                                             .clickable {
                                                 println("🔍 Quick filter clicked: $filter")
-                                                // ✅ Navigate to OrdersList with status
-                                                onOrderListClick(filter)
+                                                // ✅ Toggle filter - if already selected, deselect
+                                                selectedQuickFilter = if (selected) null else filter
                                             }
                                     ) {
                                         Text(
@@ -448,8 +464,8 @@ fun HomeScreenContent(
                     }
                 }
 
-                // Order Cards
-                if (displayOrders.isEmpty() && state.progressBarState == ProgressBarState.Idle) {
+                // Order Cards - Display filtered orders
+                if (filteredOrdersForQuickFilter.isEmpty() && state.progressBarState == ProgressBarState.Idle) {
                     item {
                         Box(
                             modifier = Modifier
@@ -458,14 +474,14 @@ fun HomeScreenContent(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = if (state.isSearching) "Searching..." else "No orders found",
+                                text = if (state.isSearching) "Searching..." else if (selectedQuickFilter != null) "No orders found for this filter" else "No orders found",
                                 style = fontSemiBoldMontserrat().copy(fontSize = 14.sp),
                                 color = Color1A1A1A_60()
                             )
                         }
                     }
                 } else {
-                    items(displayOrders) { order ->
+                    items(filteredOrdersForQuickFilter) { order ->
                         Column(modifier = Modifier.padding(horizontal = 16.dp)) {
                             OrderCard(
                                 order = order,
