@@ -79,10 +79,6 @@ class OrderDetailsViewModel(
     // ✅ Updated to accept List<String> for status
     private fun loadLeadsByStatus(status: List<String>? = null, partType: String? = null) {
         viewModelScope.launch {
-            println("📥 loadLeadsByStatus called")
-            println("   Status: $status")
-            println("   PartType: $partType")
-
             setState { copy(currentStatus = status, currentPartType = partType) }
 
             interactor.getLeadsByStatus(status, partType).collect { dataState ->
@@ -97,8 +93,6 @@ class OrderDetailsViewModel(
 
                     is DataState.Data -> {
                         val newLeads = dataState.data?.leads ?: emptyList()
-                        println("✅ Leads received: ${newLeads.size} items")
-
                         setState {
                             copy(
                                 leads = newLeads,
