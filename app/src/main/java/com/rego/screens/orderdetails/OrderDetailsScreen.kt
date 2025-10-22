@@ -18,7 +18,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -42,7 +41,6 @@ import coil.request.ImageRequest
 import com.rego.R
 import com.rego.screens.base.DefaultScreenUI
 import com.rego.screens.components.DashedDivider
-import com.rego.screens.main.home.data.LeadsResponse
 import com.rego.screens.orderdetails.data.OrderDetailsResponse
 import com.rego.ui.theme.Color1A1A1A_60
 import com.rego.ui.theme.Color1A1A1A_90
@@ -66,46 +64,8 @@ fun OrderDetailsScreen(orderId: String, onBack: () -> Unit) {
     DefaultScreenUI(progressBarState = state.progressBarState) { paddingValues ->
         Spacer(modifier = Modifier.size(paddingValues.calculateTopPadding()))
 
-        // Header
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 20.dp, start = 14.dp, bottom = 14.dp, end = 14.dp)
-                .background(Color.White),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Icon(
-                painter = painterResource(id = R.drawable.back),
-                contentDescription = "Back",
-                tint = Color1A1A1A_90(),
-                modifier = Modifier
-                    .size(22.dp)
-                    .clickable { onBack() }
-            )
-            Spacer(modifier = Modifier.width(10.dp))
-            Text(
-                text = "Order details",
-                style = fontSemiBoldMontserrat().copy(fontSize = 16.sp),
-                color = Color1A1A1A_90(),
-            )
-        }
-
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(Color.White.copy(alpha = 0.5f))
-                .height(2.dp)
-                .shadow(1.dp)
-        )
-
-        if (state.progressBarState == com.rego.screens.base.ProgressBarState.Loading) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
-            }
-        } else if (state.error != null && lead == null) {
+        // Only show content if not loading and no error or has data
+        if (state.error != null && lead == null) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -125,8 +85,45 @@ fun OrderDetailsScreen(orderId: String, onBack: () -> Unit) {
                     Text("Retry")
                 }
             }
-        } else {
-            OrderDetailsContent(lead = lead)
+        } else if (lead != null) {
+            Column(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                // Header
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 20.dp, start = 14.dp, bottom = 14.dp, end = 14.dp)
+                        .background(Color.White),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.back),
+                        contentDescription = "Back",
+                        tint = Color1A1A1A_90(),
+                        modifier = Modifier
+                            .size(22.dp)
+                            .clickable { onBack() }
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = "Order details",
+                        style = fontSemiBoldMontserrat().copy(fontSize = 16.sp),
+                        color = Color1A1A1A_90(),
+                    )
+                }
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color.White.copy(alpha = 0.5f))
+                        .height(2.dp)
+                        .shadow(1.dp)
+                )
+
+                // Content
+                OrderDetailsContent(lead = lead)
+            }
         }
     }
 }
@@ -195,8 +192,7 @@ fun OrderDetailsContent(lead: OrderDetailsResponse?) {
 
         Spacer(Modifier.height(16.dp))
 
-        // Part Photos Section (if available in future API updates)
-        // For now, showing placeholder since images aren't in the current API response
+        // Part Photos Section
         Text(
             text = "Part Photos:",
             style = fontSemiBoldPoppins().copy(fontSize = 14.sp, color = Color1A1A1A_90())
