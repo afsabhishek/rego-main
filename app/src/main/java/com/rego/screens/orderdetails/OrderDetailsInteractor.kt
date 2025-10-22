@@ -4,6 +4,7 @@ import com.rego.screens.base.DataState
 import com.rego.screens.base.ProgressBarState
 import com.rego.screens.base.UIComponent
 import com.rego.screens.main.home.data.LeadsResponse
+import com.rego.screens.orderdetails.data.OrderDetailsResponse
 import com.rego.util.UserPreferences
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -13,7 +14,7 @@ class OrderDetailsInteractor(
     private val userPreferences: UserPreferences
 ) {
 
-    fun getLeadById(leadId: String): Flow<DataState<LeadsResponse.LeadsData.Lead>> = flow {
+    fun getLeadById(_id: String): Flow<DataState<OrderDetailsResponse>> = flow {
         try {
             emit(DataState.Loading(progressBarState = ProgressBarState.Loading))
 
@@ -31,16 +32,16 @@ class OrderDetailsInteractor(
                 return@flow
             }
 
-            val response = api.getLeadById(authToken, leadId)
+            val response = api.getLeadById(authToken, _id)
 
-            if (response.success && response.data != null && response.data.leads.isNotEmpty()) {
-                emit(DataState.Data(response.data.leads.first()))
+            if (response.success && response.data != null) {
+                emit(DataState.Data(response))
             } else {
                 emit(
                     DataState.Error(
                         UIComponent.Dialog(
                             title = "Error",
-                            message = response.message ?: "Lead not found"
+                            message = "Lead not found"
                         )
                     )
                 )

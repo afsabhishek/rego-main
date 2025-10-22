@@ -30,7 +30,8 @@ data class HomeViewState(
     val currentPage: Int = 1,
     val hasMorePages: Boolean = false,
     val statsError: String? = null,
-    val leadsError: String? = null
+    val leadsError: String? = null,
+    val userRole: UserRole = UserRole.CSM
 ) : ViewState {
     val displayOrders: List<OrderData>
         get() = when {

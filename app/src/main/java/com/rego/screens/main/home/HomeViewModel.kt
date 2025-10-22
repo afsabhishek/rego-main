@@ -1,3 +1,4 @@
+// app/src/main/java/com/rego/screens/main/home/HomeViewModel.kt (Updated Section)
 package com.rego.screens.main.home
 
 import androidx.lifecycle.viewModelScope
@@ -16,6 +17,16 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Locale
 
+/**
+ * User Role for the application
+ * CSM: Customer Service Manager (Insurer/Insurance Partner)
+ * CR: Customer Representative (Workshop Partner)
+ */
+enum class UserRole {
+    CSM,  // Current Insurer app flow
+    CR    // New Workshop partner flow
+}
+
 class HomeViewModel(
     private val homeInteractor: HomeInteractor,
     private val profileInteractor: ProfileInteractor,
@@ -24,6 +35,9 @@ class HomeViewModel(
 
     private var searchJob: Job? = null
     private var currentLeads = mutableListOf<LeadsResponse.LeadsData.Lead>()
+
+    // Track user role
+    private var userRole: UserRole = UserRole.CSM
 
     override fun setInitialState() = HomeViewState()
 
@@ -48,11 +62,33 @@ class HomeViewModel(
 
     private fun init() {
         viewModelScope.launch {
+            // 1️⃣ Determine user role from preferences
+            determineUserRole()
+
+            // 2️⃣ Load data based on role
             setState { copy(progressBarState = ProgressBarState.Loading) }
 
             launch { loadUserProfile() }
             launch { loadLeadStats() }
             launch { loadOngoingLeads() }
+        }
+    }
+
+    /**
+     * Determine user role from stored preferences
+     * This should match the user's role from the login response
+     */
+    private suspend fun determineUserRole() {
+        try {
+            val role = userPreferences.getUserRole()
+            userRole = if (role == "CR") UserRole.CR else UserRole.CSM
+
+            println("👤 User Role Determined: $userRole")
+            setState { copy(userRole = userRole) }
+        } catch (e: Exception) {
+            println("⚠️ Failed to determine user role, defaulting to CSM")
+            userRole = UserRole.CSM
+            setState { copy(userRole = userRole) }
         }
     }
 
@@ -217,7 +253,6 @@ class HomeViewModel(
             }
             loadOngoingLeads(null)
         } else {
-            // ✅ Map the card label to API status format
             val apiStatuses = mapStatusKeyToApiFormat(filterLabel)
             println("🔍 Mapped card label '$filterLabel' to API statuses: $apiStatuses")
 
@@ -232,14 +267,10 @@ class HomeViewModel(
         }
     }
 
-    /**
-     * ✅ Maps card label to list of API status values
-     * This is called when user clicks on a summary card
-     */
     private fun mapStatusKeyToApiFormat(statusKey: String): List<String> {
         return when (statusKey) {
             "New Leads" -> listOf("NEW")
-            "Total Leads" -> emptyList()  // Empty list = all leads
+            "Total Leads" -> emptyList()
             "Approved" -> listOf(
                 "PICKUP_ALIGNED",
                 "PICKUP_DONE",
@@ -319,16 +350,13 @@ class HomeViewModel(
     private fun handleCardClick(cardType: String) {
         println("📊 Card clicked: $cardType")
 
-        // ✅ Get the status array for this card from stats
         val statItem = state.value.leadStatsItems?.find { it.label == cardType }
         val statusesToLoad = statItem?.status ?: emptyList()
 
         println("📊 Loading leads for card: $cardType with statuses: $statusesToLoad")
 
-        // Navigate to OrderList and pass the card label as filter type
         setAction { HomeAction.NavigateToOrderList(cardType) }
 
-        // Load leads for the selected card
         loadOngoingLeads(if (statusesToLoad.isEmpty()) null else statusesToLoad, page = 1)
     }
 

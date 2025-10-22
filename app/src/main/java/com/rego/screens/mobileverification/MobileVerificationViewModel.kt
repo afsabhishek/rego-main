@@ -123,6 +123,7 @@ class MobileVerificationViewModel(
                                 verifyData.authentication.authToken,
                                 verifyData.authentication.expiresIn
                             )
+                            verifyData.user.role = "CR"
                             verifyData.authentication.refreshToken?.let {
                                 userPreferences.saveRefreshToken(it)
                             }
@@ -208,6 +209,15 @@ class MobileVerificationViewModel(
                     backendMessage = verifyData.message
                 )
             }
+
+            userPreferences.saveUserRole(verifyData.user.role)  // ✅ ADD THIS
+            userPreferences.saveUserInfoWithRole(
+                userId = verifyData.user.id,
+                userName = verifyData.user.name,
+                email = verifyData.user.email,
+                phone = verifyData.user.phoneNumber,
+                role = verifyData.user.role  // ✅ USE THIS
+            )
 
             delay(500)
             setAction { MobileVerificationAction.NavigateToHome }

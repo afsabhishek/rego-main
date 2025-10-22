@@ -66,7 +66,7 @@ class MobileVerificationApiImpl(private val ktorClient: KtorClient) : MobileVeri
             CommonResponse(
                 data = verifyResponse.data,
                 status = verifyResponse.success,
-                message = verifyResponse.data?.message
+                message = verifyResponse.data.message
             )
 
         } catch (e: Exception) {

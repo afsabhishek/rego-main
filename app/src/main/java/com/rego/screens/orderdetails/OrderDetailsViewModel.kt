@@ -4,7 +4,6 @@ import androidx.lifecycle.viewModelScope
 import com.rego.screens.base.BaseViewModel
 import com.rego.screens.base.DataState
 import com.rego.screens.base.ProgressBarState
-import com.rego.screens.main.home.data.LeadsResponse
 import kotlinx.coroutines.launch
 
 class OrderDetailsViewModel(
@@ -20,7 +19,7 @@ class OrderDetailsViewModel(
             }
 
             is OrderDetailsEvent.LoadLeadDetails -> {
-                loadLeadDetails(event.leadId)
+                loadLeadDetails(event._id)
             }
 
             is OrderDetailsEvent.LoadLeadsByStatus -> {
@@ -29,22 +28,18 @@ class OrderDetailsViewModel(
             }
 
             is OrderDetailsEvent.RetryLoadDetails -> {
-                state.value.selectedLeadId?.let { leadId ->
-                    loadLeadDetails(leadId)
+                state.value.selectedId?.let { _id ->
+                    loadLeadDetails(_id)
                 }
-            }
-
-            is OrderDetailsEvent.LoadMoreLeads -> {
-                loadMoreLeads()
             }
         }
     }
 
-    private fun loadLeadDetails(leadId: String) {
+    private fun loadLeadDetails(_id: String) {
         viewModelScope.launch {
-            setState { copy(selectedLeadId = leadId) }
+            setState { copy(selectedId = _id) }
 
-            interactor.getLeadById(leadId).collect { dataState ->
+            interactor.getLeadById(_id).collect { dataState ->
                 when (dataState) {
                     is DataState.Loading -> {
                         setState { copy(progressBarState = dataState.progressBarState) }
@@ -96,10 +91,7 @@ class OrderDetailsViewModel(
                         setState {
                             copy(
                                 leads = newLeads,
-                                pagination = dataState.data?.pagination,
-                                hasMorePages = dataState.data?.pagination?.hasNextPage ?: false,
                                 progressBarState = ProgressBarState.Idle,
-                                isLoadingMore = false,
                                 error = null
                             )
                         }
@@ -109,7 +101,6 @@ class OrderDetailsViewModel(
                         setState {
                             copy(
                                 progressBarState = ProgressBarState.Idle,
-                                isLoadingMore = false,
                                 error = "Failed to load leads"
                             )
                         }
@@ -129,46 +120,5 @@ class OrderDetailsViewModel(
         println("   PartType: $partType")
 
         loadLeadsByStatus(status = status, partType = partType)
-    }
-
-    private fun loadMoreLeads() {
-        if (state.value.isLoadingMore || !state.value.hasMorePages) return
-
-        val nextPage = state.value.currentPage + 1
-
-        viewModelScope.launch {
-            setState { copy(isLoadingMore = true) }
-
-            // ✅ Load next page with current filters
-            interactor.getLeadsByStatus(
-                status = state.value.currentStatus,
-                partType = state.value.currentPartType,
-                page = nextPage
-            ).collect { dataState ->
-                when (dataState) {
-                    is DataState.Data -> {
-                        dataState.data?.let { leadsData ->
-                            val newLeads = leadsData.leads
-
-                            setState {
-                                copy(
-                                    leads = state.value.leads + newLeads,
-                                    pagination = leadsData.pagination,
-                                    currentPage = leadsData.pagination.currentPage,
-                                    hasMorePages = leadsData.pagination.hasNextPage,
-                                    isLoadingMore = false
-                                )
-                            }
-                        }
-                    }
-
-                    is DataState.Error -> {
-                        setState { copy(isLoadingMore = false) }
-                    }
-
-                    else -> {}
-                }
-            }
-        }
     }
 }

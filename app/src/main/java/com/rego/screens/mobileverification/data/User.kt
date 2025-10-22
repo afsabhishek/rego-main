@@ -20,7 +20,7 @@ data class User(
     @SerialName("insuranceCompany")
     val insuranceCompany: String,
     @SerialName("role")
-    val role: String,
+    var role: String,
     @SerialName("firebaseUid")
     val firebaseUid: String,
     @SerialName("isPhoneVerified")

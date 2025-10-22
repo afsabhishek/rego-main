@@ -33,6 +33,75 @@ class UserPreferences(private val context: Context) {
         private val USER_NAME_KEY = stringPreferencesKey("user_name")
         private val USER_EMAIL_KEY = stringPreferencesKey("user_email")
         private val USER_PHONE_KEY = stringPreferencesKey("user_phone")
+
+        // ... existing keys ...
+        private val USER_ROLE_KEY = stringPreferencesKey("user_role") // ✅ NEW
+
+        // Role values
+        const val ROLE_CSM = "CSM"  // Customer Service Manager (Insurer)
+        const val ROLE_CR = "CR"    // Customer Representative (Workshop)
+    }
+
+    /**
+    * Save user role from login response
+    * Should be called after successful login
+    */
+    suspend fun saveUserRole(role: String) {
+        context.dataStore.edit { preferences ->
+            val normalizedRole = if (role.equals("CR", ignoreCase = true)) "CR" else "CSM"
+            preferences[USER_ROLE_KEY] = normalizedRole
+
+            println("✅ User role saved: $normalizedRole")
+        }
+    }
+
+    /**
+     * Get stored user role
+     * Returns "CSM" by default if not set
+     */
+    suspend fun getUserRole(): String {
+        return context.dataStore.data
+            .map { preferences -> preferences[USER_ROLE_KEY] ?: ROLE_CSM }
+            .first()
+    }
+
+    /**
+     * Check if user is a CR (Workshop Partner)
+     */
+    suspend fun isCRUser(): Boolean {
+        return getUserRole() == ROLE_CR
+    }
+
+    /**
+     * Check if user is a CSM (Insurer)
+     */
+    suspend fun isCSMUser(): Boolean {
+        return getUserRole() == ROLE_CSM
+    }
+
+    /**
+     * Updated save method to include role
+     * Call this from login/authentication response
+     */
+    suspend fun saveUserInfoWithRole(
+        userId: String,
+        userName: String,
+        email: String,
+        phone: String,
+        role: String  // ✅ NEW parameter
+    ) {
+        context.dataStore.edit { preferences ->
+            preferences[USER_ID_KEY] = userId
+            preferences[USER_NAME_KEY] = userName
+            preferences[USER_EMAIL_KEY] = email
+            preferences[USER_PHONE_KEY] = phone
+
+            // Normalize and save role
+            val normalizedRole = if (role.equals("CR", ignoreCase = true)) "CR" else "CSM"
+            preferences[USER_ROLE_KEY] = normalizedRole
+
+            println("✅ User info saved with role: $normalizedRole")
+        }
     }
 
     // ==================== Backend Token Management ====================

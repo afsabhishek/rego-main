@@ -105,30 +105,10 @@ fun OrderListScreen(
         // Load initial data with the status from card
         viewModel.setEvent(
             OrderDetailsEvent.LoadLeadsByStatus(
-                status = if (initialStatus.isEmpty()) null else initialStatus,
+                status = initialStatus.ifEmpty { null },
                 page = 1
             )
         )
-    }
-
-    // Detect when user scrolls to bottom for pagination
-    val isAtBottom by remember {
-        derivedStateOf {
-            val layoutInfo = listState.layoutInfo
-            val visibleItemsInfo = layoutInfo.visibleItemsInfo
-            if (layoutInfo.totalItemsCount == 0) {
-                false
-            } else {
-                val lastVisibleItem = visibleItemsInfo.lastOrNull()
-                lastVisibleItem?.index == layoutInfo.totalItemsCount - 1
-            }
-        }
-    }
-
-    LaunchedEffect(isAtBottom) {
-        if (isAtBottom && state.hasMorePages && !state.isLoadingMore) {
-            viewModel.setEvent(OrderDetailsEvent.LoadMoreLeads)
-        }
     }
 
     Scaffold(
@@ -201,7 +181,7 @@ fun OrderListScreen(
 
                                         // ✅ Load leads with BOTH status and part type
                                         viewModel.loadLeadsByStatusWithPartType(
-                                            status = if (initialStatus.isEmpty()) null else initialStatus,
+                                            status = initialStatus.ifEmpty { null },
                                             partType = partType.partType
                                         )
                                     }
@@ -330,7 +310,7 @@ fun OrderListScreen(
                         CircularProgressIndicator()
                     }
                 }
-                state.error != null && state.leads.isEmpty() -> {
+                state.error != null && state.leads.isNotEmpty() -> {
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
@@ -359,9 +339,7 @@ fun OrderListScreen(
                 else -> {
                     OrderListContent(
                         leads = state.leads,
-                        isLoadingMore = state.isLoadingMore,
-                        onOrderClick = onOrderClick,
-                        listState = listState
+                        onOrderClick = onOrderClick
                     )
                 }
             }
@@ -372,9 +350,7 @@ fun OrderListScreen(
 @Composable
 fun OrderListContent(
     leads: List<LeadsResponse.LeadsData.Lead>,
-    isLoadingMore: Boolean,
-    onOrderClick: (String) -> Unit,
-    listState: androidx.compose.foundation.lazy.LazyListState
+    onOrderClick: (String) -> Unit
 ) {
     Column(
         modifier = Modifier.fillMaxSize()
@@ -413,7 +389,6 @@ fun OrderListContent(
         } else {
             // Order list
             LazyColumn(
-                state = listState,
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -424,22 +399,9 @@ fun OrderListContent(
                         orderType = lead.partType,  // ✅ Use actual part type from lead
                         isExpanded = true,
                         onToggleExpanded = {},
-                        onCardClick = { onOrderClick(lead.leadId) },
+                        onCardClick = { onOrderClick(lead.id) },
                         fromOrderListing = true
                     )
-                }
-
-                if (isLoadingMore) {
-                    item {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator(modifier = Modifier.size(24.dp))
-                        }
-                    }
                 }
             }
         }

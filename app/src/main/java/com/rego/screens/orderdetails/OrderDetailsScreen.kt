@@ -43,6 +43,7 @@ import com.rego.R
 import com.rego.screens.base.DefaultScreenUI
 import com.rego.screens.components.DashedDivider
 import com.rego.screens.main.home.data.LeadsResponse
+import com.rego.screens.orderdetails.data.OrderDetailsResponse
 import com.rego.ui.theme.Color1A1A1A_60
 import com.rego.ui.theme.Color1A1A1A_90
 import com.rego.ui.theme.RegoTheme
@@ -124,21 +125,14 @@ fun OrderDetailsScreen(orderId: String, onBack: () -> Unit) {
                     Text("Retry")
                 }
             }
-        } else if (lead != null) {
-            OrderDetailsContent(lead = lead)
         } else {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("No order details available", color = Color.Gray)
-            }
+            OrderDetailsContent(lead = lead)
         }
     }
 }
 
 @Composable
-fun OrderDetailsContent(lead: LeadsResponse.LeadsData.Lead) {
+fun OrderDetailsContent(lead: OrderDetailsResponse?) {
     val scrollState = rememberScrollState()
 
     Column(
@@ -159,7 +153,7 @@ fun OrderDetailsContent(lead: LeadsResponse.LeadsData.Lead) {
                 )
             )
             Text(
-                text = lead.leadId,
+                text = lead?.data?.leadId.toString(),
                 style = fontSemiBoldPoppins().copy(
                     fontSize = 14.sp,
                     color = Color.Black.copy(alpha = 0.9f)
@@ -185,13 +179,13 @@ fun OrderDetailsContent(lead: LeadsResponse.LeadsData.Lead) {
             )
             Spacer(Modifier.weight(1f))
             Icon(
-                painter = painterResource(id = getPartTypeIcon(lead.partType)),
-                contentDescription = lead.partType,
+                painter = painterResource(id = getPartTypeIcon(lead?.data?.partType.toString())),
+                contentDescription = lead?.data?.partType.toString(),
                 modifier = Modifier.size(24.dp)
             )
             Spacer(Modifier.width(6.dp))
             Text(
-                text = lead.partType,
+                text = lead?.data?.partType.toString(),
                 style = fontSemiBoldPoppins().copy(
                     fontSize = 12.sp,
                     color = Color1A1A1A_90()
@@ -210,7 +204,7 @@ fun OrderDetailsContent(lead: LeadsResponse.LeadsData.Lead) {
         Spacer(Modifier.height(8.dp))
 
         // Show vehicle image if available
-        lead.vehicle.image?.let { imageUrl ->
+        lead?.data?.images?.let { imageUrl ->
             AsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
                     .data(imageUrl)
@@ -253,7 +247,7 @@ fun OrderDetailsContent(lead: LeadsResponse.LeadsData.Lead) {
 }
 
 @Composable
-fun OrderSummaryCard(lead: LeadsResponse.LeadsData.Lead) {
+fun OrderSummaryCard(lead: OrderDetailsResponse?) {
     Card(
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(2.dp),
@@ -268,8 +262,8 @@ fun OrderSummaryCard(lead: LeadsResponse.LeadsData.Lead) {
             )
             Spacer(Modifier.height(2.dp))
             TwoColumnValueRow(
-                value1 = "${lead.vehicle.make} ${lead.vehicle.model}, ${lead.makeYear}",
-                value2 = lead.registrationNumber
+                value1 = "${lead?.data?.vehicle?.make} ${lead?.data?.vehicle?.model}, ${lead?.data?.makeYear}",
+                value2 = lead?.data?.registrationNumber.toString()
             )
 
             Spacer(modifier = Modifier.height(14.dp))
@@ -285,7 +279,7 @@ fun OrderSummaryCard(lead: LeadsResponse.LeadsData.Lead) {
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    lead.advisor.name,
+                    lead?.data?.advisor?.name.toString(),
                     style = fontSemiBoldPoppins().copy(fontSize = 12.sp, color = Color1A1A1A_90())
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -297,7 +291,7 @@ fun OrderSummaryCard(lead: LeadsResponse.LeadsData.Lead) {
                     )
                     Spacer(Modifier.width(5.dp))
                     Text(
-                        lead.advisor.contact,
+                        lead?.data?.advisor?.contact.toString(),
                         style = fontSemiBoldPoppins().copy(
                             fontSize = 12.sp,
                             color = Color1A1A1A_90()
@@ -315,8 +309,8 @@ fun OrderSummaryCard(lead: LeadsResponse.LeadsData.Lead) {
             )
             Spacer(Modifier.height(2.dp))
             TwoColumnValueRow(
-                value1 = lead.dealer?.name.toString(),
-                value2 = lead.dealer?.location.toString()
+                value1 = lead?.data?.workshop?.dealerName.toString(),
+                value2 = lead?.data?.workshop?.location.toString()
             )
 
             Spacer(modifier = Modifier.height(14.dp))
@@ -328,9 +322,9 @@ fun OrderSummaryCard(lead: LeadsResponse.LeadsData.Lead) {
             )
             Spacer(Modifier.height(2.dp))
             TwoColumnValueRow(
-                value1 = lead.claimNumber,
-                value2 = formatStatus(lead.status),
-                value2Color = getStatusColor(lead.status)
+                value1 = lead?.data?.claimNumber.toString(),
+                value2 = formatStatus(lead?.data?.status.toString()),
+                value2Color = getStatusColor(lead?.data?.status.toString())
             )
 
             Spacer(modifier = Modifier.height(14.dp))
@@ -342,8 +336,8 @@ fun OrderSummaryCard(lead: LeadsResponse.LeadsData.Lead) {
             )
             Spacer(Modifier.height(2.dp))
             TwoColumnValueRow(
-                value1 = lead.policyType,
-                value2 = if (lead.inventoryPickUp) "Yes" else "No"
+                value1 = lead?.data?.policyType.toString(),
+                value2 = if (lead?.data?.inventoryPickUp == true) "Yes" else "No"
             )
         }
     }

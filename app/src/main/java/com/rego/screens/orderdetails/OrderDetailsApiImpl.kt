@@ -4,6 +4,7 @@ import com.rego.network.ApiRoutes
 import com.rego.network.KtorClient
 import com.rego.network.NetworkConfig
 import com.rego.screens.main.home.data.LeadsResponse
+import com.rego.screens.orderdetails.data.OrderDetailsResponse
 import io.ktor.client.call.body
 import io.ktor.client.request.get
 import io.ktor.client.request.header
@@ -15,20 +16,18 @@ class OrderDetailsApiImpl(
     private val ktorClient: KtorClient
 ) : OrderDetailsApi {
 
-    override suspend fun getLeadById(authToken: String, leadId: String): LeadsResponse {
+    override suspend fun getLeadById(authToken: String, _id: String): OrderDetailsResponse {
         return try {
             val response = ktorClient.client.get {
-                url("${NetworkConfig.BASE_URL}${ApiRoutes.GET_LEADS}")
+                url("${NetworkConfig.BASE_URL}${ApiRoutes.GET_LEADS}/${_id}")
                 header(HttpHeaders.Authorization, "Bearer $authToken")
-                parameter("leadId", leadId)
             }
-            response.body<LeadsResponse>()
+            response.body<OrderDetailsResponse>()
         } catch (e: Exception) {
             e.printStackTrace()
-            LeadsResponse(
+            OrderDetailsResponse(
                 success = false,
-                data = null,
-                message = "Failed to fetch lead details: ${e.localizedMessage}"
+                data = null
             )
         }
     }
@@ -44,10 +43,6 @@ class OrderDetailsApiImpl(
             val response = ktorClient.client.get {
                 url("${NetworkConfig.BASE_URL}${ApiRoutes.GET_LEADS}")
                 header(HttpHeaders.Authorization, "Bearer $authToken")
-
-                // ✅ Add pagination parameters - convert page to offset
-                parameter("offset", (page - 1) * limit)
-                parameter("limit", limit)
 
                 // ✅ Add status filter - if list is not null and not empty
                 status?.let { statusList ->
