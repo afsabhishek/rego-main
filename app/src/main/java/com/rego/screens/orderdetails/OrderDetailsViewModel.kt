@@ -32,6 +32,8 @@ class OrderDetailsViewModel(
                     loadLeadDetails(_id)
                 }
             }
+            is OrderDetailsEvent.AcceptLead -> acceptLead(event.leadId)
+            is OrderDetailsEvent.RejectLead -> rejectLead(event.leadId)
         }
     }
 
@@ -120,5 +122,44 @@ class OrderDetailsViewModel(
         println("   PartType: $partType")
 
         loadLeadsByStatus(status = status, partType = partType)
+    }
+
+    private fun acceptLead(leadId: String) {
+        viewModelScope.launch {
+            interactor.acceptLead(leadId).collect { dataState ->
+                when (dataState) {
+                    is DataState.Data -> {
+                        setAction { OrderDetailsAction.LeadAccepted(leadId) }
+                    }
+                    is DataState.Error -> {
+                        setError { dataState.uiComponent }
+                    }
+                    is DataState.Loading -> {
+                        setState { copy(progressBarState = dataState.progressBarState) }
+                    }
+                    else -> {}
+                }
+            }
+        }
+    }
+
+    private fun rejectLead(leadId: String) {
+        viewModelScope.launch {
+            interactor.rejectLead(leadId).collect { dataState ->
+                when (dataState) {
+                    is DataState.Data -> {
+                        setAction { OrderDetailsAction.LeadRejected(leadId) }
+                    }
+                    is DataState.Error -> {
+                        setError { dataState.uiComponent }
+                    }
+                    is DataState.Loading -> {
+                        setState { copy(progressBarState = dataState.progressBarState) }
+                    }
+                    else -> {}
+                }
+            }
+        }
+
     }
 }

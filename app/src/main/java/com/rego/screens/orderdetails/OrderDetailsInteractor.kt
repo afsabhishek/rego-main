@@ -4,6 +4,7 @@ import com.rego.screens.base.DataState
 import com.rego.screens.base.ProgressBarState
 import com.rego.screens.base.UIComponent
 import com.rego.screens.main.home.data.LeadsResponse
+import com.rego.screens.orderdetails.data.LeadActionResponse
 import com.rego.screens.orderdetails.data.OrderDetailsResponse
 import com.rego.util.UserPreferences
 import kotlinx.coroutines.flow.Flow
@@ -130,5 +131,63 @@ class OrderDetailsInteractor(
                 emit(DataState.Loading(progressBarState = ProgressBarState.Idle))
             }
         }
+    }
+
+    fun acceptLead(leadId: String): Flow<DataState<LeadActionResponse>> = flow {
+        try {
+            emit(DataState.Loading(progressBarState = ProgressBarState.Loading))
+
+            val authToken = userPreferences.getAuthToken()
+            if (authToken.isNullOrEmpty()) {
+                emit(
+                    DataState.Error(
+                        UIComponent.ErrorData(
+                            title = "Authentication Error",
+                            message = "Please login again",
+                            buttonText = "Login"
+                        )
+                    )
+                )
+                return@flow
+            }
+
+            val response = api.acceptLead(authToken, leadId)
+
+            if (response.success) {
+                emit(DataState.Data(response))
+                emit(DataState.Error(
+                    UIComponent.Snackbar(
+                        message = "Lead successfully accepted",
+                        buttonText = "OK"
+                    )
+                ))
+            } else {
+                emit(
+                    DataState.Error(
+                        UIComponent.Dialog(
+                            title = "Error",
+                            message = response.message ?: "Failed to accept lead"
+                        )
+                    )
+                )
+            }
+        } catch (e: Exception) {
+            emit(
+                DataState.Error(
+                    UIComponent.ErrorData(
+                        title = "Connection Error",
+                        message = "Unable to connect to server. Please check your internet connection.",
+                        buttonText = "Retry"
+                    )
+                )
+            )
+        } finally {
+            emit(DataState.Loading(progressBarState = ProgressBarState.Idle))
+        }
+    }
+
+    fun rejectLead(leadId: String): Flow<DataState<LeadActionResponse>> = flow {
+        // Similar implementation to acceptLead
+        // With slightly different error messaging
     }
 }

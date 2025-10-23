@@ -33,7 +33,7 @@ data class OrderDetailsResponse(
         val updatedAt: String,
         @SerialName("__v")
         val version: Int,
-        val inspectedBy: String
+        val inspectedBy: String? = null
     )
 
     // ==================== Vehicle Details ====================

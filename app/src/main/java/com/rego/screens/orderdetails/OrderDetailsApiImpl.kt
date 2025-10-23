@@ -4,13 +4,19 @@ import com.rego.network.ApiRoutes
 import com.rego.network.KtorClient
 import com.rego.network.NetworkConfig
 import com.rego.screens.main.home.data.LeadsResponse
+import com.rego.screens.orderdetails.data.LeadActionResponse
 import com.rego.screens.orderdetails.data.OrderDetailsResponse
 import io.ktor.client.call.body
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.parameter
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
 import io.ktor.client.request.url
+import io.ktor.client.utils.EmptyContent.contentType
+import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
+import io.ktor.http.contentType
 
 class OrderDetailsApiImpl(
     private val ktorClient: KtorClient
@@ -72,6 +78,42 @@ class OrderDetailsApiImpl(
                 success = false,
                 data = null,
                 message = "Failed to fetch leads: ${e.localizedMessage}"
+            )
+        }
+    }
+
+    override suspend fun acceptLead(authToken: String, leadId: String): LeadActionResponse {
+        return try {
+            val response = ktorClient.client.post {
+                url("${NetworkConfig.BASE_URL}/leads/accept")
+                header(HttpHeaders.Authorization, "Bearer $authToken")
+                contentType(ContentType.Application.Json)
+                setBody(mapOf("leadId" to leadId))
+            }
+            response.body<LeadActionResponse>()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            LeadActionResponse(
+                success = false,
+                message = "Failed to accept lead: ${e.localizedMessage}"
+            )
+        }
+    }
+
+    override suspend fun rejectLead(authToken: String, leadId: String): LeadActionResponse {
+        return try {
+            val response = ktorClient.client.post {
+                url("${NetworkConfig.BASE_URL}/leads/reject")
+                header(HttpHeaders.Authorization, "Bearer $authToken")
+                contentType(ContentType.Application.Json)
+                setBody(mapOf("leadId" to leadId))
+            }
+            response.body<LeadActionResponse>()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            LeadActionResponse(
+                success = false,
+                message = "Failed to reject lead: ${e.localizedMessage}"
             )
         }
     }

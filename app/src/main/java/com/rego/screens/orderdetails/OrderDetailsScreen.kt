@@ -1,6 +1,8 @@
 package com.rego.screens.orderdetails
 
+import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,15 +18,24 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -40,7 +51,10 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.rego.R
 import com.rego.screens.base.DefaultScreenUI
+import com.rego.screens.components.AcceptButtonWithText
 import com.rego.screens.components.DashedDivider
+import com.rego.screens.components.RejectButtonWithText
+import com.rego.screens.main.home.UserRole
 import com.rego.screens.orderdetails.data.OrderDetailsResponse
 import com.rego.ui.theme.Color1A1A1A_60
 import com.rego.ui.theme.Color1A1A1A_90
@@ -54,11 +68,27 @@ import org.koin.androidx.compose.koinViewModel
 fun OrderDetailsScreen(orderId: String, onBack: () -> Unit) {
     val viewModel: OrderDetailsViewModel = koinViewModel()
     val state by viewModel.state.collectAsState()
+    val context = LocalContext.current
 
     LaunchedEffect(orderId) {
         viewModel.setEvent(OrderDetailsEvent.LoadLeadDetails(orderId))
     }
 
+    LaunchedEffect(Unit) {
+        viewModel.action.collect { action ->
+            when (action) {
+                is OrderDetailsAction.LeadAccepted -> {
+                    Toast.makeText(context, "Lead accepted successfully", Toast.LENGTH_SHORT).show()
+                    onBack() // Optional: go back after accepting
+                }
+                is OrderDetailsAction.LeadRejected -> {
+                    Toast.makeText(context, "Lead rejected successfully", Toast.LENGTH_SHORT).show()
+                    onBack() // Optional: go back after rejecting
+                }
+                else -> {}
+            }
+        }
+    }
     val lead = state.selectedLead
 
     DefaultScreenUI(progressBarState = state.progressBarState) { paddingValues ->
@@ -79,7 +109,7 @@ fun OrderDetailsScreen(orderId: String, onBack: () -> Unit) {
                     style = fontSemiBoldPoppins().copy(fontSize = 14.sp)
                 )
                 Spacer(modifier = Modifier.height(16.dp))
-                androidx.compose.material3.TextButton(
+                TextButton(
                     onClick = { viewModel.setEvent(OrderDetailsEvent.RetryLoadDetails) }
                 ) {
                     Text("Retry")
@@ -122,14 +152,32 @@ fun OrderDetailsScreen(orderId: String, onBack: () -> Unit) {
                 )
 
                 // Content
-                OrderDetailsContent(lead = lead)
+                OrderDetailsContent(
+                    lead = lead,
+                    userRole = UserRole.CR,
+                    onAccept = {
+                        lead?.data?.let { leadDetails ->
+                            viewModel.setEvent(OrderDetailsEvent.AcceptLead(leadDetails.id))
+                        }
+                    },
+                    onReject = {
+                        lead?.data?.let { leadDetails ->
+                            viewModel.setEvent(OrderDetailsEvent.RejectLead(leadDetails.id))
+                        }
+                    }
+                )
             }
         }
     }
 }
 
 @Composable
-fun OrderDetailsContent(lead: OrderDetailsResponse?) {
+fun OrderDetailsContent(
+    lead: OrderDetailsResponse?,
+    userRole: UserRole,
+    onAccept: () -> Unit = {},
+    onReject: () -> Unit = {}
+) {
     val scrollState = rememberScrollState()
 
     Column(
@@ -238,6 +286,26 @@ fun OrderDetailsContent(lead: OrderDetailsResponse?) {
         // Order Summary Card
         OrderSummaryCard(lead)
 
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Spacer(modifier = Modifier.height(16.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+
+            RejectButtonWithText(
+                onClick = onReject
+            )
+
+            AcceptButtonWithText(
+                onClick = {
+                    OrderAcceptanceScreen{
+                        onAccept
+                    }
+                }
+            )
+        }
         Spacer(modifier = Modifier.height(24.dp))
     }
 }
@@ -400,6 +468,110 @@ fun getStatusColor(status: String): Color {
         "APPROVED" -> Color(0xFF11CA3C)
         else -> Color1A1A1A_90()
     }
+}
+
+@Composable
+fun OrderAcceptanceScreen(
+    onOrderAccept: () -> Unit
+) {
+    var selectedOrderType by remember { mutableStateOf(OrderType.REPAIRABLE) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.SpaceBetween
+    ) {
+        // Title and Order Type Selection
+        Text(
+            text = "Accept the order",
+            style = MaterialTheme.typography.headlineSmall,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
+
+        // Order Type Radio Group
+        Column(modifier = Modifier.padding(vertical = 16.dp)) {
+            OrderTypeRadioButton(
+                text = "Repairable",
+                selected = selectedOrderType == OrderType.REPAIRABLE,
+                onClick = { selectedOrderType = OrderType.REPAIRABLE }
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            OrderTypeRadioButton(
+                text = "Physical Inspection required",
+                selected = selectedOrderType == OrderType.PHYSICAL_INSPECTION,
+                onClick = { selectedOrderType = OrderType.PHYSICAL_INSPECTION }
+            )
+        }
+
+        // Accept Order Button
+        Button(
+            onClick = { onOrderAccept() },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFF2E7D32), // Green color matching design
+                contentColor = Color.White
+            ),
+            shape = RoundedCornerShape(8.dp)
+        ) {
+            Text(
+                text = "Accept order",
+                style = MaterialTheme.typography.bodyLarge
+            )
+        }
+    }
+}
+
+@Composable
+fun OrderTypeRadioButton(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .border(
+                width = 1.dp,
+                color = if (selected) Color(0xFF2E7D32) else Color.Gray,
+                shape = RoundedCornerShape(8.dp)
+            )
+            .background(
+                color = if (selected) Color(0xFF2E7D32).copy(alpha = 0.1f)
+                else Color.Transparent
+            )
+            .clickable(onClick = onClick)
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        RadioButton(
+            selected = selected,
+            onClick = onClick,
+            colors = RadioButtonDefaults.colors(
+                selectedColor = Color(0xFF2E7D32),
+                unselectedColor = Color.Gray
+            )
+        )
+
+        Spacer(modifier = Modifier.width(8.dp))
+
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyMedium,
+            color = if (selected) Color(0xFF2E7D32) else Color.Black
+        )
+    }
+}
+
+// Enum to represent order types
+enum class OrderType {
+    REPAIRABLE,
+    PHYSICAL_INSPECTION
 }
 
 @Preview

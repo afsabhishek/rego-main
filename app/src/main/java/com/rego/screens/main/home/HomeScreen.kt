@@ -34,6 +34,7 @@ import com.rego.ui.theme.Color1A1A1A_40
 import com.rego.ui.theme.Color1A1A1A_60
 import com.rego.ui.theme.Color1A1A1A_90
 import com.rego.ui.theme.fontLightMontserrat
+import com.rego.ui.theme.fontMediumPoppins
 import com.rego.ui.theme.fontSemiBoldMontserrat
 import org.koin.androidx.compose.koinViewModel
 
@@ -105,6 +106,14 @@ fun HomeScreen(
                 }
             }
         }
+        BottomNavBar(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .fillMaxWidth(),
+            isHomeSelected = true,
+            onHomeClick = { },
+            onProfileClick = onProfileClick
+        )
     }
 }
 
@@ -735,6 +744,79 @@ private fun CRActionButton(
                 tint = Color00954D
             )
         }
+    }
+}
+@Composable
+fun BottomNavBar(
+    modifier: Modifier = Modifier,
+    isHomeSelected: Boolean = false,
+    isProfileSelected: Boolean = false,
+    onHomeClick: () -> Unit,
+    onProfileClick: () -> Unit
+) {
+    NavigationBar(
+        modifier = modifier,
+        containerColor = Color.White,
+        tonalElevation = 8.dp
+    ) {
+        NavigationBarItem(
+            selected = isHomeSelected,
+            onClick = {
+                if (!isHomeSelected) {
+                    onHomeClick()
+                }
+            },
+            icon = {
+                Icon(
+                    painter = painterResource(R.drawable.home),
+                    contentDescription = "Home",
+                    tint = if (isHomeSelected) Color00954D else Color.Gray
+                )
+            },
+            label = {
+                Text(
+                    text = "Home",
+                    color = if (isHomeSelected) Color00954D else Color.Gray,
+                    style = fontMediumPoppins().copy(fontSize = 12.sp)
+                )
+            },
+            colors = NavigationBarItemDefaults.colors(
+                selectedIconColor = Color00954D,
+                selectedTextColor = Color00954D,
+                indicatorColor = Color.Transparent,
+                unselectedIconColor = Color.Gray,
+                unselectedTextColor = Color.Gray
+            )
+        )
+        NavigationBarItem(
+            selected = isProfileSelected,
+            onClick = {
+                if (!isProfileSelected) {
+                    onProfileClick()
+                }
+            },
+            icon = {
+                Icon(
+                    painter = painterResource(R.drawable.person),
+                    contentDescription = "Profile",
+                    tint = if (isProfileSelected) Color00954D else Color.Gray
+                )
+            },
+            label = {
+                Text(
+                    text = "Profile",
+                    color = if (isProfileSelected) Color00954D else Color.Gray,
+                    style = fontMediumPoppins().copy(fontSize = 12.sp)
+                )
+            },
+            colors = NavigationBarItemDefaults.colors(
+                selectedIconColor = Color00954D,
+                selectedTextColor = Color00954D,
+                indicatorColor = Color.Transparent,
+                unselectedIconColor = Color.Gray,
+                unselectedTextColor = Color.Gray
+            )
+        )
     }
 }
 

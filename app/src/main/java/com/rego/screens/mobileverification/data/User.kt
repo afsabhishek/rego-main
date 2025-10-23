@@ -18,7 +18,7 @@ data class User(
     @SerialName("state")
     val state: String,
     @SerialName("insuranceCompany")
-    val insuranceCompany: String,
+    val insuranceCompany: String? = null,
     @SerialName("role")
     var role: String,
     @SerialName("firebaseUid")
@@ -30,5 +30,5 @@ data class User(
     @SerialName("createdAt")
     val createdAt: String,
     @SerialName("updatedAt")
-    val updatedAt: String
+    val updatedAt: String,
 )
